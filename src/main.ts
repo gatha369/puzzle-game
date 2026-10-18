@@ -6,6 +6,7 @@ import { isCleared, parseGrid, step, type Board, type Direction } from './game/i
 import { bindKeyboard } from './input/keyboard.ts';
 import { bindSwipe } from './input/swipe.ts';
 import { detectTiltSupport, isNaturalOrientation, TiltControl, tiltNeedsPermission } from './input/tilt.ts';
+import { AdView } from './render/adView.ts';
 import { BoardView, reduceMotion } from './render/boardView.ts';
 import { Celebrate } from './render/celebrate.ts';
 import { HintView } from './render/hint.ts';
@@ -55,6 +56,7 @@ let medals = loadMedals();
 const view = new BoardView($('board'), $('cells'), $('layer'));
 const fx = new Particles($<HTMLCanvasElement>('fx'), !reduceMotion); // 動きを減らす設定ではパーティクルを出さない
 const celebrate = new Celebrate($('clear'), fx);
+const ad = new AdView($<HTMLAnchorElement>('ad'));
 const hint = new HintView($('hintArrow'), document.querySelector<HTMLElement>('.controls')!);
 
 // ===== 描画 =====
@@ -105,6 +107,7 @@ function loadStage(i: number) {
   busy = false;
   hintsUsed = 0;
   hint.clear();
+  ad.next(); // やり直し・次のステージ・ステージ選択のたびに宣伝文を替える
   fx.clear();
   view.build(board);
   renderStages();

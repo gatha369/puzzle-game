@@ -1,4 +1,4 @@
-<title>色寄せパズル 試作</title>
+<title>RYMスライド</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Kosugi+Maru&display=swap">
@@ -27,6 +27,10 @@
   --shadow: rgba(31, 42, 54, .18);
   --honey: #f2c14e;
   --honey-bg: #fff6dc;
+  --pink: #e0508f;
+  --pink-bg: #fff0f6;
+  --pink-line: #f6b3d0;
+  --scrim: rgba(255, 228, 240, .62);
   --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
   --font-body: "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
 }
@@ -38,6 +42,7 @@
     --warn-bg: #3a2220; --warn-fg: #ffb3aa; --ok-bg: #1c3326; --ok-fg: #9be0b5;
     --shadow: rgba(0, 0, 0, .5);
     --honey: #b8892a; --honey-bg: #3a3020;
+    --pink: #f283b6; --pink-bg: #3a2231; --pink-line: #6e3b55; --scrim: rgba(18, 8, 14, .62);
     color-scheme: dark;
   }
 }
@@ -48,6 +53,7 @@
   --warn-bg: #3a2220; --warn-fg: #ffb3aa; --ok-bg: #1c3326; --ok-fg: #9be0b5;
   --shadow: rgba(0, 0, 0, .5);
   --honey: #b8892a; --honey-bg: #3a3020;
+  --pink: #f283b6; --pink-bg: #3a2231; --pink-line: #6e3b55; --scrim: rgba(18, 8, 14, .62);
   color-scheme: dark;
 }
 body {
@@ -58,6 +64,7 @@ body {
 }
 .wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 header h1 { font-family: var(--font-display); font-weight: 900; font-size: 1.6rem; margin: 0; letter-spacing: .02em; }
+header h1 .ruby { display: block; font-family: var(--font-body); font-weight: 400; font-size: .7rem; letter-spacing: .12em; color: var(--muted); margin-top: 2px; }
 header p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.6; }
 
 .stages { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -76,6 +83,23 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; line-height: 
 .counts b { color: var(--fg); font-size: 1.25rem; font-family: var(--font-display); }
 
 /* 盤面：傾きは .board-box の perspective と .board の回転で表現 */
+.ad {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  margin-bottom: -6px; padding: 4px 2px;
+  font-size: .78rem; line-height: 1.4; color: var(--muted); text-decoration: none;
+}
+.ad:hover .ad-text, .ad:focus-visible .ad-text { text-decoration: underline; text-underline-offset: 3px; }
+.ad:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.ad-tag {
+  flex: none; font-size: .62rem; letter-spacing: .08em; padding: 1px 6px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--muted);
+}
+.ad-track { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+.ad-text { display: inline-block; }
+.ad-text.fadein { animation: adfade .5s ease-out; }
+@keyframes adfade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.ad-track.scroll .ad-text { animation: adscroll var(--ad-dur, 12s) linear 1.2s infinite; padding-right: 3em; }
+@keyframes adscroll { 0%, 8% { transform: translateX(0); } 92%, 100% { transform: translateX(calc(-1 * var(--ad-shift, 0px))); } }
 .board-box { width: min(100%, 420px); margin: 8px auto; perspective: 900px; }
 .board {
   position: relative; padding: 8px; border-radius: 12px; background: var(--panel);
@@ -153,12 +177,40 @@ button:active { transform: translateY(1px); }
 }
 @keyframes hintpulse { 0% { opacity: 0; transform: scale(.7); } 15% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
 .controls button.hinted { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent); }
+.ad-modal {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
+  background: var(--scrim);
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.ad-dialog {
+  position: relative; width: min(100%, 340px); padding: 22px 20px 18px;
+  background: var(--pink-bg); color: var(--fg); border: 2px solid var(--pink-line); border-radius: 20px;
+  box-shadow: 0 10px 30px var(--shadow); display: flex; flex-direction: column; gap: 14px;
+  animation: adpop .28s cubic-bezier(.2, 1.4, .4, 1);
+}
+@keyframes adpop { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.ad-close {
+  position: absolute; top: -14px; right: -14px; width: 48px; height: 48px; border-radius: 50%;
+  border: 3px solid var(--pink-bg); background: var(--pink); color: #fff; font-size: 1.4rem; font-weight: 700;
+  line-height: 1; cursor: pointer; box-shadow: 0 3px 8px var(--shadow);
+}
+.ad-modal-label { margin: 0; padding-right: 30px; display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--muted); }
+.ad-modal-link {
+  display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--fg);
+  font-family: var(--font-display); font-weight: 700; font-size: 1.02rem; line-height: 1.6;
+}
+.ad-modal-go { font-family: var(--font-body); font-weight: 400; font-size: .82rem; color: var(--pink); }
+.ad-modal-link:hover .ad-modal-go, .ad-modal-link:focus-visible .ad-modal-go { text-decoration: underline; text-underline-offset: 3px; }
+.ad-modal .btn.primary { background: var(--pink); border-color: var(--pink); align-self: stretch; padding: 10px 16px; font-size: 1rem; }
 .rules { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; font-size: .88rem; line-height: 1.7; color: var(--muted); }
 .rules h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: .95rem; color: var(--fg); }
 .rules ul { margin: 0; padding-left: 1.2em; }
 .hint { font-size: .8rem; color: var(--muted); text-align: center; }
 @media (prefers-reduced-motion: reduce) {
   .hint-arrow { animation: none; }
+  .ad-dialog { animation: none; }
+  .ad-track.scroll .ad-text { animation: none; }
+  .ad-track.scroll { text-overflow: ellipsis; }
   .board, .box { transition-duration: .01s !important; }
   .board[class*="tilt-"] { transform: none; }
   .box.pop i, .box.land i, .box.stick i { animation-duration: .01s; }
@@ -167,7 +219,7 @@ button:active { transform: translateY(1px); }
 
 <div class="wrap">
   <header>
-    <h1>色寄せパズル</h1>
+    <h1>RYMスライド <span class="ruby">アールワイエムスライド</span></h1>
     <p>ルール確認用の試作です（全32ステージ）。盤を傾けてボックスを全部いっせいに滑らせ、同じ色を3個以上くっつけて消します。</p>
   </header>
 
@@ -181,6 +233,10 @@ button:active { transform: translateY(1px); }
       <span id="hintCountWrap" hidden>ヒント <b id="hintCount">0</b></span>
     </div>
   </div>
+
+  <a class="ad" id="ad" href="https://rym.co.jp/" target="_blank" rel="noopener">
+    <span class="ad-tag">PR</span><span class="ad-track"><span class="ad-text" id="adText"></span></span>
+  </a>
 
   <div class="board-box">
     <div class="board" id="board" aria-label="盤面">
@@ -226,10 +282,21 @@ button:active { transform: translateY(1px); }
       <li>同じ色が上下左右に3個以上つながると、その塊がまとめて消えます（4個以上も全部消えます）</li>
       <li>★のレインボーキャンディ（9面〜）はどの色とも揃います。黄色いはちみつ床（13面〜）に滑り込んだボックスはそこで止まります</li>
       <li>全部消せばクリア。お手本手数ちょうどで金、+2手まで銀、それ以上は銅</li>
-      <li>ヒントを押すと、今の盤面からの最短手順の次の1手を矢印で教えてくれます。ヒントを使ったステージは銀賞までになります</li>
+      <li>ヒントを押すと、今の盤面からの最短手順の次の1手を矢印で教えてくれます。ヒントを使ったステージは銀賞までになります。ヒント3回に1回、短いお知らせが出ます</li>
       <li>色の残りが1〜2個になるなど、解けなくなったら「もう解けません」と出ます。1手戻しはありません</li>
     </ul>
   </section>
+</div>
+
+<div class="ad-modal" id="adModal" hidden>
+  <div class="ad-dialog" role="dialog" aria-modal="true" aria-labelledby="adModalTitle">
+    <button class="ad-close" id="adClose" type="button" aria-label="閉じてヒントを見る">✕</button>
+    <p class="ad-modal-label" id="adModalTitle"><span class="ad-tag">PR</span>ヒントの前に、ちょっとだけお知らせ</p>
+    <a class="ad-modal-link" id="adModalLink" href="https://rym.co.jp/" target="_blank" rel="noopener">
+      <span id="adModalText"></span><span class="ad-modal-go">サイトを見る ›</span>
+    </a>
+    <button class="btn primary" id="adGo" type="button">ヒントを見る</button>
+  </div>
 </div>
 
 <script>
@@ -435,8 +502,36 @@ const INTROS = {
 function loadStage(i) {
   stageIdx = i; board = parse(STAGES[i].grid, STAGES[i].floor); moves = 0; state = 'play'; busy = false; hintsUsed = 0;
   clearHint();
+  showAd();
   $('board').className = 'board';
   buildBoard(); renderStages(); updateStatus();
+}
+
+// ===== 宣伝テキスト（ステージごとにランダム） =====
+const ADS = [{"biz": "manabi", "text": "パソコンの「分からない」、そのままにしない。まなびライフ", "url": "https://manabi-life.net/"}, {"biz": "manabi", "text": "WordもExcelも自分のペースで。90分の個人レッスン", "url": "https://manabi-life.net/"}, {"biz": "manabi", "text": "決まったテキストなし。できないところから学べます", "url": "https://manabi-life.net/"}, {"biz": "manabi", "text": "同じ質問も何度でもどうぞ。江別のかかりつけITサポート", "url": "https://manabi-life.net/"}, {"biz": "manabi", "text": "急なパソコントラブル、まずはLINEでご相談を", "url": "https://manabi-life.net/"}, {"biz": "manabi", "text": "江別市内は出張交通費無料。パソコンのことならまなびライフ", "url": "https://manabi-life.net/"}, {"biz": "manabi", "text": "チラシを作りながら覚えるパソコンレッスン", "url": "https://manabi-life.net/"}, {"biz": "manabi", "text": "AIで何ができる？ まずは体験してみませんか", "url": "https://manabi-life.net/"}, {"biz": "manabi", "text": "イベントの音響・撮影・SNS運用もお手伝いします", "url": "https://manabi-life.net/"}, {"biz": "manabi", "text": "写真・デザイン・Webサイト制作もまなびライフへ", "url": "https://manabi-life.net/"}, {"biz": "nenju", "text": "心を込めた“一連”を。江別の念珠工房 長岡念珠店", "url": "https://nagaokanenju.com/"}, {"biz": "nenju", "text": "お念珠のオーダーメイド、ご相談ください", "url": "https://nagaokanenju.com/"}, {"biz": "nenju", "text": "よそでお求めのお念珠も修理します。長岡念珠店", "url": "https://nagaokanenju.com/"}, {"biz": "nenju", "text": "糸が切れたお念珠、直せます。江別の職人工房", "url": "https://nagaokanenju.com/"}, {"biz": "nenju", "text": "天然石と正絹の房で、あなただけの一連を", "url": "https://nagaokanenju.com/"}, {"biz": "nenju", "text": "自分でお念珠を作ってみませんか。念珠の学校オンライン", "url": "https://nagaokanenju.com/"}, {"biz": "nenju", "text": "お念珠づくりは、練習すれば短期間で身につきます", "url": "https://nagaokanenju.com/"}, {"biz": "nenju", "text": "念珠材料もそろうオンラインショップ", "url": "https://nagaokanenju.com/"}, {"biz": "nenju", "text": "ご宗派に合わせたお念珠をおつくりします", "url": "https://nagaokanenju.com/"}, {"biz": "nenju", "text": "つい、合掌してしまう一連を。長岡念珠店", "url": "https://nagaokanenju.com/"}, {"biz": "rym", "text": "業務のムダ、システムで解決します。RYM systems", "url": "https://rym.co.jp/"}, {"biz": "rym", "text": "このゲームを作ったRYM systemsが、業務システムも開発します", "url": "https://rym.co.jp/"}, {"biz": "rym", "text": "紙とエクセルの管理、アプリにしませんか", "url": "https://rym.co.jp/"}, {"biz": "rym", "text": "寺院の業務改善・システム開発もご相談ください", "url": "https://rym.co.jp/"}, {"biz": "rym", "text": "伝統と革新をつなぐ。RYM systems", "url": "https://rym.co.jp/"}, {"biz": "rym", "text": "課題解決を、共に。江別のシステム開発 RYM systems", "url": "https://rym.co.jp/"}, {"biz": "rym", "text": "小さな困りごとから業務改善を。RYM systems", "url": "https://rym.co.jp/"}, {"biz": "rym", "text": "元プログラマーの代表が、現場の課題に向き合います", "url": "https://rym.co.jp/"}, {"biz": "rym", "text": "あらゆる「困りごと」に、誠実に向き合う。RYM systems", "url": "https://rym.co.jp/"}, {"biz": "rym", "text": "名簿・予約・会計など、業務に合わせたアプリを開発します", "url": "https://rym.co.jp/"}];
+let lastAd = -1, lastBiz = '';
+function pickAd() {
+  // 直前と同じ文・同じ事業が続かないように選ぶ
+  const pool = ADS.map((a, i) => i).filter(i => i !== lastAd && ADS[i].biz !== lastBiz);
+  const i = pool[Math.floor(Math.random() * pool.length)];
+  lastAd = i; lastBiz = ADS[i].biz;
+  return ADS[i];
+}
+function showAd() {
+  const ad = pickAd(), a = $('ad'), t = $('adText'), track = t.parentElement;
+  a.href = ad.url;
+  t.textContent = ad.text;
+  track.classList.remove('scroll');
+  t.classList.remove('fadein'); void t.offsetWidth; t.classList.add('fadein');
+  // 1行に収まらないときだけ、ゆっくり横に流す
+  requestAnimationFrame(() => {
+    const shift = t.scrollWidth - track.clientWidth;
+    if (shift > 4) {
+      track.style.setProperty('--ad-shift', (shift + 8) + 'px');
+      track.style.setProperty('--ad-dur', Math.max(8, shift / 18 + 6) + 's');
+      track.classList.add('scroll');
+    }
+  });
 }
 
 const ARROWS = { up: '▲', down: '▼', left: '◀', right: '▶' };
@@ -445,23 +540,51 @@ function clearHint() {
   $('hintArrow').hidden = true;
   document.querySelectorAll('.controls button.hinted').forEach(b => b.classList.remove('hinted'));
 }
-function showHint() {
-  if (state !== 'play' || busy) return;
-  const sol = solve(board);
-  if (!Array.isArray(sol) || !sol.length) return; // 詰みは別の表示で知らせる
-  clearHint();
-  hintsUsed++;
-  const dir = sol[0];
+// ヒントの通算回数（端末に保存）。3の倍数回目はヒントの前にPRのポップアップを出す
+function loadHintTotal() { try { return parseInt(localStorage.getItem('rym-hint-total') || '0', 10) || 0; } catch (e) { return 0; } }
+function saveHintTotal(n) { try { localStorage.setItem('rym-hint-total', String(n)); } catch (e) {} }
+let hintTotal = loadHintTotal(), adOpen = false, pendingHintDir = null, lastFocus = null;
+
+function displayHint(dir) {
   const el = $('hintArrow');
   el.textContent = ARROWS[dir];
   el.hidden = false; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   document.querySelector(`.controls button[data-dir="${dir}"]`).classList.add('hinted');
   hintTimer = setTimeout(() => { $('hintArrow').hidden = true; }, reduceMotion ? 2500 : 1600);
+}
+
+function openAdModal(dir) {
+  const ad = pickAd(); // 盤面の上に出ている事業とは別の文が選ばれる
+  $('adModalLink').href = ad.url;
+  $('adModalText').textContent = ad.text;
+  pendingHintDir = dir; adOpen = true;
+  lastFocus = document.activeElement;
+  $('adModal').hidden = false;
+  $('adClose').focus();
+}
+function closeAdModal() {
+  if (!adOpen) return;
+  adOpen = false;
+  $('adModal').hidden = true;
+  const dir = pendingHintDir; pendingHintDir = null;
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+  if (dir && state === 'play') displayHint(dir);
+}
+
+function showHint() {
+  if (state !== 'play' || busy || adOpen) return;
+  const sol = solve(board);
+  if (!Array.isArray(sol) || !sol.length) return; // 詰みは別の表示で知らせる
+  clearHint();
+  hintsUsed++;
+  hintTotal++; saveHintTotal(hintTotal);
   updateStatus();
+  if (hintTotal % 3 === 0) openAdModal(sol[0]);
+  else displayHint(sol[0]);
 }
 
 async function doMove(dir) {
-  if (state !== 'play' || busy) return;
+  if (state !== 'play' || busy || adOpen) return;
   clearHint();
   const r = step(board, dir);
   if (!r) {
@@ -549,11 +672,19 @@ function showAllClear() {
 // ===== 入力 =====
 document.querySelectorAll('.controls button').forEach(b => b.addEventListener('click', () => doMove(b.dataset.dir)));
 $('hintBtn').addEventListener('click', showHint);
+$('adClose').addEventListener('click', closeAdModal);
+$('adGo').addEventListener('click', closeAdModal);
+$('adModal').addEventListener('click', e => { if (e.target === $('adModal')) closeAdModal(); }); // 外側をタップしても閉じる
+$('adModalLink').addEventListener('click', () => setTimeout(closeAdModal, 0)); // サイトを開いたら、戻ったときにヒントが出ている
 $('resetBtn').addEventListener('click', () => { if (!busy) loadStage(stageIdx); });
 $('stuckReset').addEventListener('click', () => loadStage(stageIdx));
 $('againBtn').addEventListener('click', () => loadStage(stageIdx));
 $('nextBtn').addEventListener('click', () => loadStage(Math.min(stageIdx + 1, STAGES.length - 1)));
 document.addEventListener('keydown', e => {
+  if (adOpen) { // ポップアップ中はゲームの操作を止める。Esc で閉じる
+    if (e.key === 'Escape') { e.preventDefault(); closeAdModal(); }
+    return;
+  }
   const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
   const d = map[e.key] || map[(e.key || '').toLowerCase()];
   if (d) { e.preventDefault(); doMove(d); }

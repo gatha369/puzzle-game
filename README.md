@@ -32,6 +32,10 @@ npm run dev          # 開発サーバーを起動 → http://localhost:5173/ �
 2. `npm run verify-stages` で解けることを確認し、`par` を自動で書き込む
 3. `npm test` を通す（ステージの最短手順を固定したテストがあるので、変えたステージは `tests/solver.test.ts` も更新する）
 
+## 宣伝テキスト（PR表示）を変えるとき
+
+`src/ads/messages.json` だけを書き換える（各項目は `biz` 事業、`text` 文、`url` リンク先）。ステージを読み込むたびにランダムで1文表示し、直前と同じ文・同じ事業は続かない。
+
 ## フォルダ構成
 
 ```
@@ -43,6 +47,7 @@ src/
   input/     スワイプ・キー入力・端末の傾き（しきい値は tiltConfig.ts）
   audio/     Web Audio で合成した BGM（song.ts が楽譜）と効果音（sfx.ts の表）
   storage/   メダルと設定の保存（localStorage）
+  ads/       宣伝テキスト（messages.json）と選び方
 scripts/verify-stages.ts
 tests/
 ```
