@@ -1,4 +1,7 @@
 import './style.css';
+import { startBgm, stopBgm } from './audio/bgm.ts';
+import { installUnlock, onUnlock, setBgmEnabled, setSfxEnabled } from './audio/engine.ts';
+import { playSfx, type SfxName } from './audio/sfx.ts';
 import { isCleared, parseGrid, step, type Board, type Direction } from './game/index.ts';
 import { bindKeyboard } from './input/keyboard.ts';
 import { bindSwipe } from './input/swipe.ts';
@@ -11,6 +14,7 @@ import { loadSettings, saveSettings } from './storage/settings.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const MEDAL_LABEL: Record<Medal, string> = { gold: '金', silver: '銀', bronze: '銅' };
+const FANFARE: Record<Medal, SfxName> = { gold: 'fanfareGold', silver: 'fanfareSilver', bronze: 'fanfareBronze' };
 
 // ===== 状態 =====
 let stageIdx = 0;
@@ -73,7 +77,7 @@ function tryMove(dir: Direction): boolean {
     board = r.next;
     busy = false;
     if (isCleared(board)) { state = 'clear'; finishClear(); }
-    else if (isStuck(board)) state = 'stuck';
+    else if (isStuck(board)) { state = 'stuck'; playSfx('stuck'); }
     updateStatus();
   });
   return true;
@@ -83,6 +87,7 @@ function finishClear() {
   const s = STAGES[stageIdx];
   const medal = medalFor(moves, s.par, s.silverMargin);
   medals = recordMedal(s.id, medal);
+  playSfx(FANFARE[medal]);
   $('clearTitle').textContent = `クリア！ ${MEDAL_LABEL[medal]}賞`;
   $('clearText').textContent = medal === 'gold'
     ? `${moves}手。お手本どおりの最短手数です。`
@@ -157,5 +162,37 @@ detectTiltSupport(() => {
   };
   document.addEventListener('pointerup', resume);
 });
+
+// ===== サウンド =====
+view.hooks = {
+  onBump: () => playSfx('bump'),
+  onTilt: () => playSfx('tilt'),
+  onLand: () => playSfx('land'),
+  onPop: (groups) => playSfx('pop', groups.length),
+};
+
+function renderSoundButtons() {
+  $('bgmBtn').setAttribute('aria-pressed', String(settings.bgm));
+  $('sfxBtn').setAttribute('aria-pressed', String(settings.sfx));
+}
+
+function setBgm(on: boolean) {
+  settings = saveSettings({ bgm: on });
+  setBgmEnabled(on);
+  if (on) startBgm(); else stopBgm(); // オフの間はシーケンサーも止める
+  renderSoundButtons();
+}
+
+$('bgmBtn').addEventListener('click', () => setBgm(!settings.bgm));
+$('sfxBtn').addEventListener('click', () => {
+  settings = saveSettings({ sfx: !settings.sfx });
+  setSfxEnabled(settings.sfx);
+  renderSoundButtons();
+});
+setBgmEnabled(settings.bgm);
+setSfxEnabled(settings.sfx);
+renderSoundButtons();
+installUnlock(); // 最初のタップ／キー操作で音を開始する
+onUnlock(() => { if (settings.bgm) startBgm(); });
 
 loadStage(0);

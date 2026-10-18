@@ -5,7 +5,16 @@ import { injectMotifSprite, motifSvg } from './motifs.ts';
 export const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, reduceMotion ? 0 : ms));
 
+/** 演出の節目で呼ばれる（音や粒子を付けるため。描画側は何を鳴らすか知らない） */
+export type BoardHooks = {
+  onBump?: () => void;
+  onTilt?: () => void;
+  onLand?: () => void;
+  onPop?: (groups: number[][]) => void;
+};
+
 export class BoardView {
+  hooks: BoardHooks = {};
   private boxes = new Map<number, HTMLElement>(); // 盤面上の位置 → ボックス要素
   private width = 1;
 
@@ -55,6 +64,7 @@ export class BoardView {
 
   /** 動かない方向でも少しだけ傾けて手応えを返す */
   async bump(dir: Direction) {
+    this.hooks.onBump?.();
     this.el.classList.add('tilt-' + dir);
     await wait(160);
     this.el.classList.remove('tilt-' + dir);
@@ -66,6 +76,7 @@ export class BoardView {
     const boardEl = this.el;
 
     // 1. 盤を傾ける
+    this.hooks.onTilt?.();
     boardEl.classList.add('tilt-' + dir);
     await wait(110);
 
@@ -79,7 +90,7 @@ export class BoardView {
       el.style.transitionDuration = dur + 'ms';
       this.placeBox(el, m.to);
       if (m.dist) {
-        setTimeout(() => { el.classList.remove('land'); void el.offsetWidth; el.classList.add('land'); }, reduceMotion ? 0 : dur);
+        setTimeout(() => { el.classList.remove('land'); void el.offsetWidth; el.classList.add('land'); this.hooks.onLand?.(); }, reduceMotion ? 0 : dur);
       }
       moved.set(m.to, el);
     }
@@ -90,6 +101,7 @@ export class BoardView {
     if (r.groups.length) {
       const pops = r.groups.flat();
       for (const p of pops) this.boxes.get(p)!.classList.add('pop');
+      this.hooks.onPop?.(r.groups);
       await wait(340);
       for (const p of pops) { this.boxes.get(p)!.remove(); this.boxes.delete(p); }
     }
