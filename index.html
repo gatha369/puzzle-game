@@ -4,19 +4,66 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffd9ec" />
     <title>色寄せパズル</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Kosugi+Maru&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" />
   </head>
   <body>
-    <div class="wrap">
-      <header>
-        <h1>色寄せパズル</h1>
-        <p>盤を傾けてボックスを全部いっせいに滑らせ、同じ色を3個以上くっつけて消します。</p>
-      </header>
+    <!-- 遊園地の背景（飾りなので読み上げない・触れない） -->
+    <div class="scenery" aria-hidden="true">
+      <div class="bunting"></div>
+      <div class="wheel">
+        <svg class="wheel-stand" viewBox="0 0 200 260">
+          <path d="M100 100L40 255M100 100L160 255" stroke="#b07cc6" stroke-width="10" stroke-linecap="round" />
+          <path d="M60 205H140" stroke="#b07cc6" stroke-width="6" stroke-linecap="round" />
+        </svg>
+        <svg class="wheel-rot" viewBox="-100 -100 200 200">
+          <circle r="88" fill="none" stroke="#ff8cc6" stroke-width="7" />
+          <circle r="76" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="4 8" />
+          <g stroke="#ffb3d9" stroke-width="3">
+            <path d="M0-88V88M-88 0H88M-62-62L62 62M62-62L-62 62" />
+            <path d="M-34-81L34 81M34-81L-34 81M-81-34L81 34M81-34L-81 34" />
+          </g>
+          <circle r="16" fill="#ffd23f" stroke="#fff" stroke-width="4" />
+          <g stroke="#fff" stroke-width="2.5">
+            <circle cx="0" cy="-88" r="9" fill="#ff6fae" /><circle cx="44" cy="-76" r="9" fill="#ffd23f" />
+            <circle cx="76" cy="-44" r="9" fill="#4fd1b5" /><circle cx="88" cy="0" r="9" fill="#62b1ff" />
+            <circle cx="76" cy="44" r="9" fill="#c25ef0" /><circle cx="44" cy="76" r="9" fill="#ff6fae" />
+            <circle cx="0" cy="88" r="9" fill="#ffd23f" /><circle cx="-44" cy="76" r="9" fill="#4fd1b5" />
+            <circle cx="-76" cy="44" r="9" fill="#62b1ff" /><circle cx="-88" cy="0" r="9" fill="#c25ef0" />
+            <circle cx="-76" cy="-44" r="9" fill="#ff6fae" /><circle cx="-44" cy="-76" r="9" fill="#ffd23f" />
+          </g>
+        </svg>
+      </div>
+      <svg class="balloon b1" viewBox="0 0 40 80"><path d="M20 50Q16 62 22 70T20 80" fill="none" stroke="#fff" stroke-width="1.5" /><ellipse cx="20" cy="24" rx="17" ry="22" fill="#ff6fae" /><path d="M16 46h8l-4 5z" fill="#ff6fae" /><ellipse cx="13" cy="15" rx="4" ry="7" fill="#fff" opacity=".55" /></svg>
+      <svg class="balloon b2" viewBox="0 0 40 80"><path d="M20 50Q16 62 22 70T20 80" fill="none" stroke="#fff" stroke-width="1.5" /><ellipse cx="20" cy="24" rx="17" ry="22" fill="#ffd23f" /><path d="M16 46h8l-4 5z" fill="#ffd23f" /><ellipse cx="13" cy="15" rx="4" ry="7" fill="#fff" opacity=".55" /></svg>
+      <svg class="balloon b3" viewBox="0 0 40 80"><path d="M20 50Q16 62 22 70T20 80" fill="none" stroke="#fff" stroke-width="1.5" /><ellipse cx="20" cy="24" rx="17" ry="22" fill="#4fd1b5" /><path d="M16 46h8l-4 5z" fill="#4fd1b5" /><ellipse cx="13" cy="15" rx="4" ry="7" fill="#fff" opacity=".55" /></svg>
+      <svg class="balloon b4" viewBox="0 0 40 80"><path d="M20 50Q16 62 22 70T20 80" fill="none" stroke="#fff" stroke-width="1.5" /><ellipse cx="20" cy="24" rx="17" ry="22" fill="#62b1ff" /><path d="M16 46h8l-4 5z" fill="#62b1ff" /><ellipse cx="13" cy="15" rx="4" ry="7" fill="#fff" opacity=".55" /></svg>
+      <i class="star s1"></i><i class="star s2"></i><i class="star s3"></i>
+      <i class="star s4"></i><i class="star s5"></i><i class="star s6"></i>
+      <svg class="tent" viewBox="0 0 400 120" preserveAspectRatio="xMidYMax slice">
+        <defs>
+          <pattern id="tentStripe" width="32" height="10" patternUnits="userSpaceOnUse">
+            <rect width="16" height="10" fill="#ff6fae" /><rect x="16" width="16" height="10" fill="#fff" />
+          </pattern>
+        </defs>
+        <path d="M0 120V92L26 70L52 92V120Z" fill="url(#tentStripe)" />
+        <path d="M348 120V92L374 70L400 92V120Z" fill="url(#tentStripe)" />
+        <path d="M200 6L330 78H70Z" fill="url(#tentStripe)" stroke="#e04b8f" stroke-width="3" stroke-linejoin="round" />
+        <path d="M70 78Q86 92 102 78Q118 92 135 78Q151 92 168 78Q184 92 200 78Q216 92 232 78Q249 92 265 78Q282 92 298 78Q314 92 330 78Z" fill="#ffd23f" />
+        <rect x="88" y="84" width="224" height="36" fill="url(#tentStripe)" />
+        <path d="M180 120V96Q200 84 220 96V120Z" fill="#8a3b6e" />
+        <path d="M200 6V-14" stroke="#e04b8f" stroke-width="3" /><path d="M200 -14L220 -8L200 -2Z" fill="#ffd23f" />
+      </svg>
+    </div>
 
-      <nav class="stages" id="stages" aria-label="ステージ選択"></nav>
+    <div class="wrap">
+      <header class="top">
+        <h1 class="logo">色寄せパズル</h1>
+        <nav class="stages" id="stages" aria-label="ステージ選択"></nav>
+      </header>
 
       <div class="status">
         <h2 id="stageName"></h2>
@@ -31,44 +78,48 @@
           <div class="cells" id="cells"></div>
           <div class="layer" id="layer"></div>
         </div>
-      </div>
-
-      <div class="banner stuck" id="stuck" hidden>
-        <span><strong>もう解けません</strong><br>どこかで手順を誤りました。最初からやり直しましょう。</span>
-        <button class="btn" id="stuckReset" type="button">やり直す</button>
-      </div>
-      <div class="banner clear" id="clear" hidden>
-        <span><strong id="clearTitle"></strong><br><span id="clearText"></span></span>
-        <button class="btn primary" id="nextBtn" type="button">次のステージへ</button>
-      </div>
-      <div class="banner info" id="tiltGuide" hidden>
-        <span><strong>画面の回転をロックしてください</strong><br>端末を傾けると画面が横向きに回ってしまうことがあります。縦向きで回転ロックをオンにして遊んでください。</span>
-        <button class="btn" id="tiltGuideOk" type="button">OK</button>
+        <!-- 盤の上に重ねるお知らせ -->
+        <div class="overlay">
+          <div class="banner stuck" id="stuck" hidden>
+            <span><strong>もう解けません</strong><br>どこかで手順を誤りました。最初からやり直しましょう。</span>
+            <button class="btn" id="stuckReset" type="button">やり直す</button>
+          </div>
+          <div class="banner clear" id="clear" hidden>
+            <span><strong id="clearTitle"></strong><br><span id="clearText"></span></span>
+            <button class="btn primary" id="nextBtn" type="button">次のステージへ</button>
+          </div>
+          <div class="banner info" id="tiltGuide" hidden>
+            <span><strong>画面の回転をロックしてください</strong><br>端末を傾けると画面が横向きに回ってしまうことがあります。縦向きで回転ロックをオンにして遊んでください。</span>
+            <button class="btn" id="tiltGuideOk" type="button">OK</button>
+          </div>
+        </div>
       </div>
       <p class="tilt-note" id="tiltNote" hidden></p>
 
-      <div class="controls" aria-label="方向">
-        <button class="up" type="button" data-dir="up" aria-label="上へ傾ける">▲</button>
-        <button class="left" type="button" data-dir="left" aria-label="左へ傾ける">◀</button>
-        <button class="down" type="button" data-dir="down" aria-label="下へ傾ける">▼</button>
-        <button class="right" type="button" data-dir="right" aria-label="右へ傾ける">▶</button>
-      </div>
-      <div class="row">
-        <button class="btn" id="resetBtn" type="button">最初からやり直す</button>
-      </div>
-      <div class="row" id="tiltRow" hidden>
-        <button class="btn" id="tiltBtn" type="button" aria-pressed="false">傾き操作：オフ</button>
-        <button class="btn" id="levelBtn" type="button" hidden>水平リセット</button>
+      <div class="dock">
+        <div class="side">
+          <button class="btn" id="resetBtn" type="button">最初から<br>やり直す</button>
+        </div>
+        <div class="controls" aria-label="方向">
+          <button class="up" type="button" data-dir="up" aria-label="上へ傾ける">▲</button>
+          <button class="left" type="button" data-dir="left" aria-label="左へ傾ける">◀</button>
+          <button class="down" type="button" data-dir="down" aria-label="下へ傾ける">▼</button>
+          <button class="right" type="button" data-dir="right" aria-label="右へ傾ける">▶</button>
+        </div>
+        <div class="side" id="tiltRow" hidden>
+          <button class="btn small" id="tiltBtn" type="button" aria-pressed="false">傾き操作：オフ</button>
+          <button class="btn small" id="levelBtn" type="button" hidden>水平リセット</button>
+        </div>
       </div>
       <p class="hint">盤面をスワイプ、矢印キー、WASD でも傾けられます（R でやり直し）</p>
 
       <section class="rules">
         <h3>ルール</h3>
         <ul>
-          <li>盤を傾けると、すべてのボックスが壁や他のボックスに当たるまで滑ります。灰色の壁は動きません</li>
-          <li>同じ色が上下左右に3個以上つながると、その塊がまとめて消えます（4個以上も全部消えます）</li>
+          <li>盤を傾けると、すべてのお菓子が壁や他のお菓子に当たるまで滑ります。ビスケットの壁は動きません</li>
+          <li>同じお菓子が上下左右に3個以上つながると、その塊がまとめて消えます（4個以上も全部消えます）</li>
           <li>全部消せばクリア。お手本手数ちょうどで金、+2手まで銀、それ以上は銅</li>
-          <li>色の残りが1〜2個になるなど、解けなくなったら「もう解けません」と出ます。1手戻しはありません</li>
+          <li>同じお菓子の残りが1〜2個になるなど、解けなくなったら「もう解けません」と出ます。1手戻しはありません</li>
         </ul>
       </section>
     </div>

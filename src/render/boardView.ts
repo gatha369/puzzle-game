@@ -1,10 +1,9 @@
 // 盤面の DOM 描画と1手の演出（傾き→滑る→消える→戻る）。数値は docs/prototype.html のまま
 import type { Board, Direction, StepResult } from '../game/index.ts';
+import { injectMotifSprite, motifSvg } from './motifs.ts';
 
 export const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, reduceMotion ? 0 : ms));
-
-const GLYPH: Record<string, string> = { R: '●', G: '▲', B: '■', Y: '◆' };
 
 export class BoardView {
   private boxes = new Map<number, HTMLElement>(); // 盤面上の位置 → ボックス要素
@@ -18,6 +17,7 @@ export class BoardView {
     this.el = el;
     this.cells = cells;
     this.layer = layer;
+    injectMotifSprite();
   }
 
   private placeBox(el: HTMLElement, pos: number) {
@@ -44,7 +44,7 @@ export class BoardView {
       if (cell.type === 'box') {
         const box = document.createElement('div');
         box.className = 'box ' + cell.color;
-        box.innerHTML = `<i>${GLYPH[cell.color] ?? ''}</i>`;
+        box.innerHTML = `<i>${motifSvg(cell.color)}</i>`;
         box.style.transitionDuration = '0ms';
         this.placeBox(box, i);
         layer.appendChild(box);
