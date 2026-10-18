@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { move, parseGrid } from '../src/game/index.ts';
-import { isStuck, solve, surelyStuck } from '../src/solver/solver.ts';
+import { isCleared, move, parseGrid } from '../src/game/index.ts';
+import { isStuck, nextHint, solve, surelyStuck } from '../src/solver/solver.ts';
 import { STAGES } from '../src/stages/index.ts';
 
 describe('簡易判定', () => {
@@ -36,6 +36,26 @@ describe('ソルバー', () => {
   it('探索上限を超えたら判定不能（詰み扱いしない）', () => {
     const b = parseGrid(['..B...', '#..B..', '.....B', '.....B', 'BG#G..', '#GRRBR']);
     expect(solve(b, 10)).toBe('limit');
+  });
+});
+
+describe('ヒント', () => {
+  it('最短手順の次の1手を返す', () => {
+    expect(nextHint(parseGrid(['R...R', '.....', '.....', '.....', 'R....']))).toBe('up');
+  });
+
+  it('教えどおりに指し続けると最短手数でクリアできる', () => {
+    let b = parseGrid(STAGES[30].grid, STAGES[30].floor);
+    let n = 0;
+    for (let d = nextHint(b); d; d = nextHint(b)) { b = move(b, d); n++; }
+    expect(isCleared(b)).toBe(true);
+    expect(n).toBe(STAGES[30].par);
+  });
+
+  it('詰み・クリア済みの盤面では出さない', () => {
+    expect(nextHint(parseGrid(['R#R#R']))).toBeNull();
+    expect(nextHint(parseGrid(['RR...']))).toBeNull();
+    expect(nextHint(parseGrid(['..#']))).toBeNull();
   });
 });
 

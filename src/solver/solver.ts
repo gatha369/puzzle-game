@@ -56,3 +56,9 @@ export function solve(board: Board, limit = SOLVE_LIMIT): SolveResult {
 export function isStuck(board: Board): boolean {
   return solve(board) === null;
 }
+
+/** ヒント：今の盤面からの最短手順の次の1手。詰み・判定不能・クリア済みなら null */
+export function nextHint(board: Board): Direction | null {
+  const sol = solve(board);
+  return Array.isArray(sol) && sol.length ? sol[0] : null;
+}

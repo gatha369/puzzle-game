@@ -8,9 +8,10 @@ import { bindSwipe } from './input/swipe.ts';
 import { detectTiltSupport, isNaturalOrientation, TiltControl, tiltNeedsPermission } from './input/tilt.ts';
 import { BoardView, reduceMotion } from './render/boardView.ts';
 import { Celebrate } from './render/celebrate.ts';
+import { HintView } from './render/hint.ts';
 import { motifSvg, honeySvg } from './render/motifs.ts';
 import { CANDY_COLORS, Particles } from './render/particles.ts';
-import { isStuck } from './solver/solver.ts';
+import { isStuck, nextHint } from './solver/solver.ts';
 import { STAGES, type Intro } from './stages/index.ts';
 import { loadMedals, medalFor, recordMedal, type Medal } from './storage/medals.ts';
 import { loadSettings, saveSettings } from './storage/settings.ts';
@@ -48,11 +49,13 @@ let board: Board;
 let moves = 0;
 let state: 'play' | 'stuck' | 'clear' = 'play';
 let busy = false; // 演出中は入力を受け付けない
+let hintsUsed = 0;
 let medals = loadMedals();
 
 const view = new BoardView($('board'), $('cells'), $('layer'));
 const fx = new Particles($<HTMLCanvasElement>('fx'), !reduceMotion); // 動きを減らす設定ではパーティクルを出さない
 const celebrate = new Celebrate($('clear'), fx);
+const hint = new HintView($('hintArrow'), document.querySelector<HTMLElement>('.controls')!);
 
 // ===== 描画 =====
 function renderStages() {
@@ -77,6 +80,9 @@ function updateStatus() {
   $('stageName').textContent = `${stageIdx + 1}. ${s.name}`;
   $('moves').textContent = String(moves);
   $('par').textContent = String(s.par);
+  $('hintCount').textContent = String(hintsUsed);
+  $('hintCountWrap').hidden = hintsUsed === 0;
+  $<HTMLButtonElement>('hintBtn').disabled = state !== 'play';
   $('stuck').hidden = state !== 'stuck';
   $('clear').hidden = state !== 'clear';
   // 紹介のあるステージは場所を取ったままにし、1手目で消す（盤の大きさが途中で変わらないように）
@@ -97,6 +103,8 @@ function loadStage(i: number) {
   moves = 0;
   state = 'play';
   busy = false;
+  hintsUsed = 0;
+  hint.clear();
   fx.clear();
   view.build(board);
   renderStages();
@@ -107,6 +115,7 @@ function loadStage(i: number) {
 /** 1手を試みる。受け付けたら true を返し、演出は非同期で進める */
 function tryMove(dir: Direction): boolean {
   if (state !== 'play' || busy) return false;
+  hint.clear(); // 次の手を指したらヒントは消す
   busy = true;
   const r = step(board, dir);
   if (!r) {
@@ -125,14 +134,25 @@ function tryMove(dir: Direction): boolean {
   return true;
 }
 
+/** ヒント：最短手順の次の1手を矢印で示す。詰んでいるとき（判定不能を含む）は出さない */
+function showHint() {
+  if (state !== 'play' || busy) return;
+  const dir = nextHint(board);
+  if (!dir) return;
+  hintsUsed++;
+  hint.show(dir);
+  playSfx('hint');
+  updateStatus();
+}
+
 function finishClear() {
   const s = STAGES[stageIdx];
-  const medal = medalFor(moves, s.par, s.silverMargin);
+  const medal = medalFor(moves, s.par, s.silverMargin, hintsUsed);
   medals = recordMedal(s.id, medal);
   const allClear = stageIdx === STAGES.length - 1 ? allClearInfo() : undefined;
   playSfx(allClear ? 'fanfareAll' : FANFARE[medal]);
   duckBgm(allClear ? 4.8 : FANFARE_SEC[medal]);
-  celebrate.show({ medal, moves, par: s.par, hasNext: stageIdx < STAGES.length - 1, allClear });
+  celebrate.show({ medal, moves, par: s.par, hints: hintsUsed, hasNext: stageIdx < STAGES.length - 1, allClear });
   renderStages();
 }
 
@@ -158,10 +178,11 @@ const resetIfIdle = () => { if (!busy) loadStage(stageIdx); };
 document.querySelectorAll<HTMLButtonElement>('.controls button').forEach((b) =>
   b.addEventListener('click', () => tryMove(b.dataset.dir as Direction)));
 $('resetBtn').addEventListener('click', resetIfIdle);
+$('hintBtn').addEventListener('click', showHint);
 $('stuckReset').addEventListener('click', () => loadStage(stageIdx));
 $('nextBtn').addEventListener('click', () => loadStage(Math.min(stageIdx + 1, STAGES.length - 1)));
 $('retryBtn').addEventListener('click', () => loadStage(stageIdx));
-bindKeyboard(tryMove, resetIfIdle);
+bindKeyboard(tryMove, resetIfIdle, showHint);
 bindSwipe(view.el, tryMove);
 
 // ===== 端末の傾き操作 =====

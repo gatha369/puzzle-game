@@ -43,6 +43,8 @@ const RIBBON = `<svg class="ribbon" viewBox="0 0 300 64" aria-hidden="true">
 
 export type ClearInfo = {
   medal: Medal; moves: number; par: number; hasNext: boolean;
+  /** 使ったヒントの回数（使うと最高でも銀） */
+  hints: number;
   /** 最終ステージをクリアしたとき：全ステージの集計 */
   allClear?: { title: string; text: string };
 };
@@ -56,7 +58,7 @@ export class Celebrate {
     this.fx = fx;
   }
 
-  show({ medal, moves, par, hasNext, allClear }: ClearInfo) {
+  show({ medal, moves, par, hints, hasNext, allClear }: ClearInfo) {
     const q = <T extends HTMLElement>(sel: string) => this.root.querySelector<T>(sel)!;
     this.root.dataset.medal = medal;
     q('.cel-all').hidden = !allClear;
@@ -70,9 +72,11 @@ export class Celebrate {
     q('.cel-medal').innerHTML = medalSvg(medal);
     q('.cel-label').textContent = LABEL[medal];
     q('.cel-moves').innerHTML = `<b>${moves}</b>手 ／ お手本 <b>${par}</b>手`;
-    q('.cel-text').textContent = medal === 'gold'
-      ? 'お手本どおりの最短手数です！'
-      : `あと${moves - par}手 短くできます。`;
+    q('.cel-text').textContent = hints > 0
+      ? `ヒント${hints}回。次はヒントなしで金賞を狙いましょう！`
+      : medal === 'gold'
+        ? 'お手本どおりの最短手数です！'
+        : `あと${moves - par}手 短くできます。`;
     q('#retryBtn').textContent = medal === 'gold' ? 'もう一度' : 'もう一度（金を狙う）';
     q('#nextBtn').hidden = !hasNext;
     this.root.hidden = false;

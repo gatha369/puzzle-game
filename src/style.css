@@ -229,6 +229,54 @@ body {
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
 
+/* ===== ヒント ===== */
+/* ボタン：はちみつ色のキャンディ縞に電球 */
+.btn.hint-btn {
+  position: relative; display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px 5px 6px; border-radius: 999px;
+  color: #7a4a00; font-weight: 900; border-color: #f0a000; box-shadow: 0 3px 0 #c98a00;
+  background: repeating-linear-gradient(-45deg, #ffe27a 0 7px, #ffd23f 7px 14px);
+}
+.hint-btn svg { width: 26px; height: 26px; flex-shrink: 0; overflow: visible; }
+.hint-btn .ray { animation: hint-ray 2.4s ease-in-out infinite; transform-origin: 20px 16px; }
+@keyframes hint-ray { 0%, 70%, 100% { opacity: .35; transform: scale(.9); } 80% { opacity: 1; transform: scale(1.12); } }
+.hint-btn:active { box-shadow: 0 1px 0 #c98a00; }
+.hint-btn:disabled { filter: grayscale(.8); opacity: .55; cursor: default; transform: none; box-shadow: 0 3px 0 #c98a00; }
+.hint-btn:disabled .ray { animation: none; }
+.counts .hint-count { border-color: #f0a000; background: #fff6dc; color: #7a4a00; }
+.counts .hint-count b { color: #7a4a00; }
+
+/* 盤の上の矢印：ぽんと出て、進む向きへ2回ぐいっと押し、すっと消える（約1.6秒） */
+.hint-arrow { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; pointer-events: none; }
+.ha-rot { width: 62%; }
+.hint-arrow[data-dir="down"] .ha-rot { transform: rotate(90deg); }
+.hint-arrow[data-dir="left"] .ha-rot { transform: rotate(180deg); }
+.hint-arrow[data-dir="up"] .ha-rot { transform: rotate(-90deg); }
+.ha-move svg { display: block; width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 4px 0 rgba(150, 30, 90, .25)); }
+.hint-arrow.play .ha-move { animation: hint-arrow 1.6s ease-out forwards; }
+.hint-arrow.play .ha-spark { animation: hint-twinkle .5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+.hint-arrow.play .ha-spark.s2 { animation-delay: .25s; }
+@keyframes hint-arrow {
+  0% { opacity: 0; transform: scale(.3) rotate(-12deg); }
+  14% { opacity: 1; transform: scale(1.12) rotate(3deg); }
+  22% { transform: scale(1); }
+  34% { transform: translateX(0); }
+  44% { transform: translateX(12%); }
+  54% { transform: translateX(0); }
+  64% { transform: translateX(12%); }
+  76% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(22%) scale(.9); }
+}
+@keyframes hint-twinkle { from { opacity: .3; scale: .6; } to { opacity: 1; scale: 1.15; } }
+
+/* 教えた方向のボタン：次の手を指すまで、波紋のように光る */
+.controls button { position: relative; }
+.controls button.hinted { border-color: var(--pink); background: #ffe3f0; color: var(--pink-d); box-shadow: 0 3px 0 var(--pink-d); }
+.controls button.hinted::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 17px; border: 3px solid var(--pink); pointer-events: none;
+  animation: hint-ring 1.1s ease-out infinite;
+}
+@keyframes hint-ring { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(1.35); } }
+
 .hint {
   margin: 0; align-self: center; font-size: .75rem; color: var(--muted); text-align: center;
   background: var(--panel); border-radius: 999px; padding: 3px 12px; /* 背景のテントの上でも読めるように */
@@ -287,6 +335,7 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
   .board[class*="tilt-"] { transform: none; }
   .box.pop i, .box.land i, .box.stick i { animation-duration: .01s; }
   .stages { scroll-behavior: auto; }
+  .hint-arrow.play .ha-move, .hint-arrow.play .ha-spark, .hint-btn .ray, .controls button.hinted::after { animation: none !important; }
   .scenery * { animation: none !important; }
   .celebrate, .celebrate * { animation: none !important; }
 }

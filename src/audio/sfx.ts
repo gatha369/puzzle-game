@@ -36,6 +36,12 @@ export const SFX = {
     notes.slice(0, n).forEach((nt, i) => bell(o, t + i * 0.05, freq(nt), { vol: 0.16, dur: 0.5 }));
   },
 
+  /** ヒント：「ピロリン♪」と問いかけるような上昇音 */
+  hint: (o, t) => {
+    ['E6', 'G6', 'D7'].forEach((nt, i) => bell(o, t + i * 0.08, freq(nt), { vol: 0.13, dur: i === 2 ? 0.7 : 0.3 }));
+    tone(o, t, freq('G5'), 0.28, { type: 'triangle', vol: 0.12, slideTo: freq('D6') });
+  },
+
   /** 動けない方向：小さな「ぽよん」 */
   bump: (o, t) => {
     tone(o, t, 260, 0.09, { vol: 0.3, slideTo: 480 });

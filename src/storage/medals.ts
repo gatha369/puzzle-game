@@ -5,9 +5,10 @@ export type Medal = 'gold' | 'silver' | 'bronze';
 const KEY = 'yose-medals';
 const RANK: Record<Medal, number> = { bronze: 1, silver: 2, gold: 3 };
 
-/** 金：お手本ちょうど、銀：+silverMargin 手以内、銅：それ以上 */
-export function medalFor(moves: number, par: number, silverMargin: number): Medal {
-  return moves <= par ? 'gold' : moves <= par + silverMargin ? 'silver' : 'bronze';
+/** 金：お手本ちょうど、銀：+silverMargin 手以内、銅：それ以上。ヒントを使ったら銀まで（金は自力のみ） */
+export function medalFor(moves: number, par: number, silverMargin: number, hintsUsed = 0): Medal {
+  const medal: Medal = moves <= par ? 'gold' : moves <= par + silverMargin ? 'silver' : 'bronze';
+  return hintsUsed > 0 && medal === 'gold' ? 'silver' : medal;
 }
 
 /** ステージ id → 最高メダル */

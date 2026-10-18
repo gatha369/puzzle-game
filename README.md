@@ -18,7 +18,7 @@ npm run dev          # 開発サーバーを起動 → http://localhost:5173/ �
 |---|---|
 | `npm run dev` | 開発サーバー。保存すると画面が自動で更新される |
 | `npm run dev -- --host` | 同じ Wi-Fi のスマホからも開けるようにする（表示される Network の URL を開く） |
-| `npm test` | Vitest でテスト（移動・消去・レインボー・はちみつ・ソルバー・メダル・傾き判定・BGM の楽譜） |
+| `npm test` | Vitest でテスト（移動・消去・レインボー・はちみつ・ソルバー・ヒント・メダル・傾き判定・BGM の楽譜） |
 | `npm run verify-stages` | 全ステージを解き、最短手数を `src/stages/stages.json` の `par` に書き込む |
 | `npm run build` | 型チェックして、公開用のファイルを `dist/` に作る |
 | `npm run preview` | `dist/` を手元で確認する |

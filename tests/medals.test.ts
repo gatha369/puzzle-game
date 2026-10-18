@@ -8,4 +8,11 @@ describe('メダル', () => {
     expect(medalFor(6, 4, 2)).toBe('silver');
     expect(medalFor(7, 4, 2)).toBe('bronze');
   });
+
+  it('ヒントを使ったら最高でも銀（銀・銅はそのまま）', () => {
+    expect(medalFor(4, 4, 2, 1)).toBe('silver');
+    expect(medalFor(6, 4, 2, 3)).toBe('silver');
+    expect(medalFor(7, 4, 2, 1)).toBe('bronze');
+    expect(medalFor(4, 4, 2, 0)).toBe('gold');
+  });
 });
