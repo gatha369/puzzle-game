@@ -6,10 +6,13 @@ import { isCleared, parseGrid, step, type Board, type Direction } from './game/i
 import { bindKeyboard } from './input/keyboard.ts';
 import { bindSwipe } from './input/swipe.ts';
 import { detectTiltSupport, isNaturalOrientation, TiltControl, tiltNeedsPermission } from './input/tilt.ts';
+import { shouldShowPromo } from './ads/ads.ts';
 import { AdView } from './render/adView.ts';
 import { BoardView, reduceMotion } from './render/boardView.ts';
 import { Celebrate } from './render/celebrate.ts';
 import { HintView } from './render/hint.ts';
+import { PromoDialog } from './render/promoDialog.ts';
+import { countHint } from './storage/hintTotal.ts';
 import { motifSvg, honeySvg } from './render/motifs.ts';
 import { CANDY_COLORS, Particles } from './render/particles.ts';
 import { isStuck, nextHint } from './solver/solver.ts';
@@ -57,6 +60,7 @@ const view = new BoardView($('board'), $('cells'), $('layer'));
 const fx = new Particles($<HTMLCanvasElement>('fx'), !reduceMotion); // 動きを減らす設定ではパーティクルを出さない
 const celebrate = new Celebrate($('clear'), fx);
 const ad = new AdView($<HTMLAnchorElement>('ad'));
+const promo = new PromoDialog($('promo'));
 const hint = new HintView($('hintArrow'), document.querySelector<HTMLElement>('.controls')!);
 
 // ===== 描画 =====
@@ -117,7 +121,7 @@ function loadStage(i: number) {
 // ===== 1手 =====
 /** 1手を試みる。受け付けたら true を返し、演出は非同期で進める */
 function tryMove(dir: Direction): boolean {
-  if (state !== 'play' || busy) return false;
+  if (state !== 'play' || busy || promo.isOpen) return false; // ポップアップ中は盤面の操作を止める
   hint.clear(); // 次の手を指したらヒントは消す
   busy = true;
   const r = step(board, dir);
@@ -137,15 +141,24 @@ function tryMove(dir: Direction): boolean {
   return true;
 }
 
-/** ヒント：最短手順の次の1手を矢印で示す。詰んでいるとき（判定不能を含む）は出さない */
+/**
+ * ヒント：最短手順の次の1手を矢印で示す。詰んでいるとき（判定不能を含む）は出さず、数えない。
+ * 通算3回に1回は、矢印の前にPRのポップアップを出す（閉じると矢印が出る）
+ */
 function showHint() {
-  if (state !== 'play' || busy) return;
+  if (state !== 'play' || busy || promo.isOpen) return;
   const dir = nextHint(board);
   if (!dir) return;
   hintsUsed++;
+  updateStatus();
+  const popupAd = shouldShowPromo(countHint()) ? ad.pickForPopup() : null;
+  if (popupAd) promo.open(popupAd, () => { if (state === 'play') displayHint(dir); });
+  else displayHint(dir);
+}
+
+function displayHint(dir: Direction) {
   hint.show(dir);
   playSfx('hint');
-  updateStatus();
 }
 
 function finishClear() {
@@ -177,7 +190,7 @@ function allClearInfo() {
 }
 
 // ===== 入力 =====
-const resetIfIdle = () => { if (!busy) loadStage(stageIdx); };
+const resetIfIdle = () => { if (!busy && !promo.isOpen) loadStage(stageIdx); };
 document.querySelectorAll<HTMLButtonElement>('.controls button').forEach((b) =>
   b.addEventListener('click', () => tryMove(b.dataset.dir as Direction)));
 $('resetBtn').addEventListener('click', resetIfIdle);

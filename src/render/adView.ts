@@ -1,5 +1,5 @@
 // 宣伝テキストの表示。1行のテキストリンクで、収まらないときだけゆっくり横に流す（動きは docs/prototype.html のまま）
-import { MESSAGES, pickAd } from '../ads/ads.ts';
+import { MESSAGES, pickAd, type AdMessage } from '../ads/ads.ts';
 import { reduceMotion } from './boardView.ts';
 
 export class AdView {
@@ -28,6 +28,16 @@ export class AdView {
     void this.text.offsetWidth;
     this.text.classList.add('fadein');
     this.fit();
+  }
+
+  /**
+   * ポップアップ用に1文選ぶ。盤面の上に出ている事業とは別の事業になる。
+   * 試作と同じく「直前に出した文」として覚えるので、次のステージの1行もこの事業とは別になる
+   */
+  pickForPopup(): AdMessage | null {
+    if (!MESSAGES.length) return null;
+    this.last = pickAd(MESSAGES, this.last);
+    return MESSAGES[this.last];
   }
 
   /** 1行に収まらないときだけ流す。動きを減らす設定では流さず、CSS で「…」にする */

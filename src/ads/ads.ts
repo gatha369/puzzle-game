@@ -15,3 +15,9 @@ export function pickAd(messages: readonly AdMessage[], last: number, random: () 
   if (!pool.length) return messages.length ? (last + 1) % messages.length : -1; // 事業が1つしかないとき
   return pool[Math.floor(random() * pool.length)];
 }
+
+/** ヒントの通算回数が3の倍数（3・6・9…回目）のときだけ、ヒントの前にPRのポップアップを出す */
+export const PROMO_EVERY = 3;
+export function shouldShowPromo(hintTotal: number): boolean {
+  return hintTotal > 0 && hintTotal % PROMO_EVERY === 0;
+}

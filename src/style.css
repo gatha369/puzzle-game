@@ -23,6 +23,9 @@
   --ok-fg: #17704f;
   --shadow: rgba(120, 40, 90, .22);
   --scenery-opacity: .9;
+  --pink-bg: #fff0f6;
+  --pink-line: #f6b3d0;
+  --scrim: rgba(255, 228, 240, .62);
   --honey: #f0a000;
   --honey-bg: #fff6dc;
   --font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
@@ -35,6 +38,7 @@
     --line: #6a559c; --cell: #3b3169; --cell-edge: #4d4085; --tray-a: #ff6fae; --tray-b: #4a2a6e;
     --warn-bg: #4a1f3a; --warn-fg: #ffc2dc; --ok-bg: #183b35; --ok-fg: #9ef0cf;
     --shadow: rgba(0, 0, 0, .5); --scenery-opacity: .7; --honey-bg: #3d3058;
+    --pink-bg: #3a2231; --pink-line: #6e3b55; --scrim: rgba(18, 8, 14, .62);
     color-scheme: dark;
   }
 }
@@ -43,6 +47,7 @@
   --line: #6a559c; --cell: #3b3169; --cell-edge: #4d4085; --tray-a: #ff6fae; --tray-b: #4a2a6e;
   --warn-bg: #4a1f3a; --warn-fg: #ffc2dc; --ok-bg: #183b35; --ok-fg: #9ef0cf;
   --shadow: rgba(0, 0, 0, .5); --scenery-opacity: .7; --honey-bg: #3d3058;
+    --pink-bg: #3a2231; --pink-line: #6e3b55; --scrim: rgba(18, 8, 14, .62);
   color-scheme: dark;
 }
 
@@ -304,6 +309,50 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
 .rules h3 { margin: 0 0 4px; font-weight: 900; font-size: .95rem; color: var(--ink); }
 .rules ul { margin: 0; padding-left: 1.2em; }
 
+/* ===== ヒント時のPRポップアップ：盤面が透ける薄ピンクの幕に、小さなピンクのカード ===== */
+.promo {
+  position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; background: var(--scrim);
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  animation: fade-in .2s ease-out;
+}
+.promo-card {
+  position: relative; width: min(100%, 340px); padding: 0 18px 18px; border-radius: 24px; overflow: visible;
+  background: var(--pink-bg); color: var(--ink); border: 4px solid #fff;
+  box-shadow: 0 0 0 3px var(--pink-line), 0 14px 34px var(--shadow);
+  display: flex; flex-direction: column; gap: 14px;
+  animation: promo-pop .28s cubic-bezier(.2, 1.4, .4, 1);
+}
+@keyframes promo-pop { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* 上辺はキャンディ縞の帯（ゲームのトレイと同じ柄） */
+.promo-head {
+  margin: 0 -18px; padding: 12px 56px 12px 14px; border-radius: 20px 20px 0 0;
+  display: flex; align-items: center; gap: 8px;
+  background: repeating-linear-gradient(-45deg, rgba(255, 111, 174, .16) 0 10px, transparent 10px 20px);
+  border-bottom: 2px dashed var(--pink-line);
+}
+.promo-candy { width: 34px; height: 34px; flex-shrink: 0; transform: rotate(-14deg); }
+.promo-title { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .82rem; font-weight: 700; color: var(--muted); line-height: 1.4; text-wrap: balance; }
+.promo-title .ad-tag { background: var(--panel); }
+/* リンクになるのは宣伝文の部分だけ */
+.promo-link {
+  display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px;
+  background: var(--panel); border: 2px solid var(--pink-line); color: var(--ink); text-decoration: none;
+  font-weight: 700; font-size: 1.02rem; line-height: 1.6;
+}
+.promo-site { align-self: flex-end; font-size: .82rem; font-weight: 700; color: var(--pink-d); }
+.promo-link:hover .promo-site, .promo-link:focus-visible .promo-site { text-decoration: underline; text-underline-offset: 3px; }
+.promo-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.btn.promo-go { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 16px; font-size: 1.05rem; font-weight: 900; border-radius: 999px; }
+.promo-go svg { width: 26px; height: 26px; }
+/* ✕：直径48px、カードの角から少しはみ出す。宣伝文のリンクからは離す */
+.promo-close {
+  position: absolute; top: -16px; right: -16px; z-index: 1; width: 48px; height: 48px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer; color: #fff;
+  background: var(--pink); border: 4px solid #fff; box-shadow: 0 3px 0 var(--pink-d), 0 6px 14px var(--shadow);
+}
+.promo-close svg { width: 20px; height: 20px; }
+.promo-close:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--pink-d); }
+
 /* ===== 演出：パーティクルとクリア画面 ===== */
 .fx { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 50; pointer-events: none; }
 .celebrate {
@@ -356,6 +405,7 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
   .stages { scroll-behavior: auto; }
   /* 宣伝文は流さず、はみ出す分を「…」にする（inline にしないと省略記号が付かない） */
   .ad-track { text-overflow: ellipsis; }
+  .promo, .promo-card { animation: none; }
   .ad-text { display: inline; }
   .hint-arrow.play .ha-move, .hint-arrow.play .ha-spark, .hint-btn .ray, .controls button.hinted::after { animation: none !important; }
   .scenery * { animation: none !important; }
