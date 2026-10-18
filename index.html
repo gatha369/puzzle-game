@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>色寄せパズル</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Kosugi+Maru&display=swap" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>色寄せパズル</h1>
+        <p>盤を傾けてボックスを全部いっせいに滑らせ、同じ色を3個以上くっつけて消します。</p>
+      </header>
+
+      <nav class="stages" id="stages" aria-label="ステージ選択"></nav>
+
+      <div class="status">
+        <h2 id="stageName"></h2>
+        <div class="counts">
+          <span>手数 <b id="moves">0</b></span>
+          <span>お手本 <b id="par">0</b></span>
+        </div>
+      </div>
+
+      <div class="board-box">
+        <div class="board" id="board" aria-label="盤面">
+          <div class="cells" id="cells"></div>
+          <div class="layer" id="layer"></div>
+        </div>
+      </div>
+
+      <div class="banner stuck" id="stuck" hidden>
+        <span><strong>もう解けません</strong><br>どこかで手順を誤りました。最初からやり直しましょう。</span>
+        <button class="btn" id="stuckReset" type="button">やり直す</button>
+      </div>
+      <div class="banner clear" id="clear" hidden>
+        <span><strong id="clearTitle"></strong><br><span id="clearText"></span></span>
+        <button class="btn primary" id="nextBtn" type="button">次のステージへ</button>
+      </div>
+      <div class="banner info" id="tiltGuide" hidden>
+        <span><strong>画面の回転をロックしてください</strong><br>端末を傾けると画面が横向きに回ってしまうことがあります。縦向きで回転ロックをオンにして遊んでください。</span>
+        <button class="btn" id="tiltGuideOk" type="button">OK</button>
+      </div>
+      <p class="tilt-note" id="tiltNote" hidden></p>
+
+      <div class="controls" aria-label="方向">
+        <button class="up" type="button" data-dir="up" aria-label="上へ傾ける">▲</button>
+        <button class="left" type="button" data-dir="left" aria-label="左へ傾ける">◀</button>
+        <button class="down" type="button" data-dir="down" aria-label="下へ傾ける">▼</button>
+        <button class="right" type="button" data-dir="right" aria-label="右へ傾ける">▶</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="resetBtn" type="button">最初からやり直す</button>
+      </div>
+      <div class="row" id="tiltRow" hidden>
+        <button class="btn" id="tiltBtn" type="button" aria-pressed="false">傾き操作：オフ</button>
+        <button class="btn" id="levelBtn" type="button" hidden>水平リセット</button>
+      </div>
+      <p class="hint">盤面をスワイプ、矢印キー、WASD でも傾けられます（R でやり直し）</p>
+
+      <section class="rules">
+        <h3>ルール</h3>
+        <ul>
+          <li>盤を傾けると、すべてのボックスが壁や他のボックスに当たるまで滑ります。灰色の壁は動きません</li>
+          <li>同じ色が上下左右に3個以上つながると、その塊がまとめて消えます（4個以上も全部消えます）</li>
+          <li>全部消せばクリア。お手本手数ちょうどで金、+2手まで銀、それ以上は銅</li>
+          <li>色の残りが1〜2個になるなど、解けなくなったら「もう解けません」と出ます。1手戻しはありません</li>
+        </ul>
+      </section>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

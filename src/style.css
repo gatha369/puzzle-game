@@ -1,0 +1,147 @@
+/* docs/prototype.html のスタイルを移植。盤面中心の1カラム */
+:root {
+  --bg: #eef1f4;
+  --panel: #ffffff;
+  --fg: #1f2a36;
+  --muted: #5e6b78;
+  --line: #d5dce3;
+  --cell: #e3e8ee;
+  --wall: #6b7785;
+  --accent: #2f6fb3;
+  --red: #d9483b;
+  --green: #2f9e5a;
+  --blue: #2f6fd6;
+  --yellow: #e0a91f;
+  --gold: #c99a18;
+  --silver: #8b98a6;
+  --bronze: #b06a3a;
+  --warn-bg: #fdeceb;
+  --warn-fg: #9b2a20;
+  --ok-bg: #e9f6ee;
+  --ok-fg: #1d6b3c;
+  --shadow: rgba(31, 42, 54, .18);
+  --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  --font-body: "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151b22; --panel: #1e2630; --fg: #e6ecf2; --muted: #9aa7b4; --line: #313c48;
+    --cell: #26303b; --wall: #7d8a98; --accent: #6fa6e6;
+    --red: #ef6658; --green: #46bd76; --blue: #5b8ff0; --yellow: #f0be3a;
+    --warn-bg: #3a2220; --warn-fg: #ffb3aa; --ok-bg: #1c3326; --ok-fg: #9be0b5;
+    --shadow: rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151b22; --panel: #1e2630; --fg: #e6ecf2; --muted: #9aa7b4; --line: #313c48;
+  --cell: #26303b; --wall: #7d8a98; --accent: #6fa6e6;
+  --red: #ef6658; --green: #46bd76; --blue: #5b8ff0; --yellow: #f0be3a;
+  --warn-bg: #3a2220; --warn-fg: #ffb3aa; --ok-bg: #1c3326; --ok-fg: #9be0b5;
+  --shadow: rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+/* display:flex などのクラス指定より hidden 属性を優先する */
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+header h1 { font-family: var(--font-display); font-weight: 900; font-size: 1.6rem; margin: 0; letter-spacing: .02em; }
+header p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.6; }
+
+.stages { display: flex; flex-wrap: wrap; gap: 6px; }
+.stages button {
+  font: inherit; font-size: .85rem; min-width: 44px; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1.1;
+}
+.stages button[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.stages .m { font-size: .7rem; color: var(--muted); }
+.m.gold { color: var(--gold); } .m.silver { color: var(--silver); } .m.bronze { color: var(--bronze); }
+
+.status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.status h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; margin: 0; }
+.counts { display: flex; gap: 16px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: .9rem; }
+.counts b { color: var(--fg); font-size: 1.25rem; font-family: var(--font-display); }
+
+/* 盤面：傾きは .board-box の perspective と .board の回転で表現 */
+.board-box { width: min(100%, 420px); margin: 8px auto; perspective: 900px; }
+.board {
+  position: relative; padding: 8px; border-radius: 12px; background: var(--panel);
+  border: 1px solid var(--line); touch-action: none; user-select: none; max-width: 100%;
+  transition: transform .18s ease-out, box-shadow .18s ease-out;
+  box-shadow: 0 6px 16px var(--shadow);
+}
+/* ===== 端末の傾き操作（試作にない追加分） ===== */
+/* 傾き操作中は実際の角度に合わせて盤を傾ける。1手の演出中は下の tilt-* が優先される */
+.board.live { transform: rotateX(var(--live-rx, 0deg)) rotateY(var(--live-ry, 0deg)); }
+.banner.info { background: var(--panel); border: 1px solid var(--line); color: var(--fg); }
+.tilt-note { margin: 0; font-size: .85rem; color: var(--muted); text-align: center; }
+.btn[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
+.board.tilt-left  { transform: rotateY(-8deg); box-shadow: 10px 6px 18px var(--shadow); }
+.board.tilt-right { transform: rotateY(8deg);  box-shadow: -10px 6px 18px var(--shadow); }
+.board.tilt-up    { transform: rotateX(8deg);  box-shadow: 0 14px 18px var(--shadow); }
+.board.tilt-down  { transform: rotateX(-8deg); box-shadow: 0 0 14px var(--shadow); }
+.cells { display: grid; gap: 4px; width: 100%; height: 100%; }
+.cell { background: var(--cell); border-radius: 6px; }
+.cell.wall { background: var(--wall);
+  background-image: repeating-linear-gradient(45deg, transparent 0 5px, rgba(0,0,0,.14) 5px 8px); }
+.layer {
+  position: absolute; inset: 8px; pointer-events: none;
+  --cw: calc((100% - (var(--w) - 1) * 4px) / var(--w));
+  --ch: calc((100% - (var(--h) - 1) * 4px) / var(--h));
+}
+.box {
+  position: absolute; width: var(--cw); height: var(--ch);
+  left: calc(var(--x) * (var(--cw) + 4px)); top: calc(var(--y) * (var(--ch) + 4px));
+  transition-property: left, top; transition-timing-function: cubic-bezier(.5, 0, .85, .55);
+}
+.box i {
+  position: absolute; inset: 6%; border-radius: 22%; display: grid; place-items: center;
+  color: #fff; font-style: normal; font-size: clamp(.7rem, 3.2vw, 1rem); font-weight: 700;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), 0 2px 3px rgba(0,0,0,.15);
+}
+.box.R i { background: var(--red); } .box.G i { background: var(--green); }
+.box.B i { background: var(--blue); } .box.Y i { background: var(--yellow); }
+.box.land i { animation: land .16s ease-out; }
+@keyframes land { 0% { transform: scale(1.08, .9); } 100% { transform: scale(1); } }
+.box.pop i { animation: pop .32s ease-in forwards; }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(0); opacity: 0; } }
+
+.banner {
+  border-radius: 10px; padding: 12px 14px; display: flex; gap: 12px; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; line-height: 1.5;
+}
+.banner.stuck { background: var(--warn-bg); color: var(--warn-fg); }
+.banner.clear { background: var(--ok-bg); color: var(--ok-fg); }
+.banner strong { font-family: var(--font-display); font-size: 1.05rem; }
+
+.controls { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 48px); gap: 6px; justify-content: center; }
+.controls button, .btn {
+  font: inherit; border-radius: 10px; border: 1px solid var(--line); background: var(--panel);
+  color: var(--fg); cursor: pointer; font-size: 1.1rem;
+}
+.controls .up { grid-column: 2; grid-row: 1; }
+.controls .left { grid-column: 1; grid-row: 2; }
+.controls .down { grid-column: 2; grid-row: 2; }
+.controls .right { grid-column: 3; grid-row: 2; }
+.row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.btn { font-size: .95rem; padding: 8px 16px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:active { transform: translateY(1px); }
+
+.rules { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; font-size: .88rem; line-height: 1.7; color: var(--muted); }
+.rules h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: .95rem; color: var(--fg); }
+.rules ul { margin: 0; padding-left: 1.2em; }
+.hint { font-size: .8rem; color: var(--muted); text-align: center; }
+@media (prefers-reduced-motion: reduce) {
+  .board, .box { transition-duration: .01s !important; }
+  .board[class*="tilt-"] { transform: none; }
+  .box.pop i, .box.land i { animation-duration: .01s; }
+}

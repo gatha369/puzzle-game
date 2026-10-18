@@ -1,0 +1,10 @@
+[
+  { "id": "1", "name": "はじめの一歩", "grid": ["R...R", ".....", ".....", ".....", "R...."], "par": 2, "silverMargin": 2 },
+  { "id": "2", "name": "二色", "grid": ["R..GR", "....G", ".....", "..G.R", "....."], "par": 3, "silverMargin": 2 },
+  { "id": "3", "name": "壁のある盤", "grid": ["R..#.", ".....", "#.R..", "..#.R", "....."], "par": 3, "silverMargin": 2 },
+  { "id": "4", "name": "三色", "grid": ["....G", "B....", ".R..#", ".BBR.", "..RGG"], "par": 4, "silverMargin": 2 },
+  { "id": "5", "name": "消しすぎ注意", "grid": ["BR..R", "..B..", "R..#.", "..B#R", "RR..."], "par": 4, "silverMargin": 2 },
+  { "id": "6", "name": "赤が六つ", "grid": ["R...R", "..BRB", "....R", "..#R#", ".B.R."], "par": 5, "silverMargin": 2 },
+  { "id": "7", "name": "広い盤", "grid": ["..R..R", "..B.BB", "BG.B..", "R.....", "B.G...", ".##.G#"], "par": 5, "silverMargin": 2 },
+  { "id": "8", "name": "七手の道", "grid": ["..B...", "#..B..", ".....B", ".....B", "BG#G..", "#GRRBR"], "par": 7, "silverMargin": 2 }
+]

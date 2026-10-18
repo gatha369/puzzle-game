@@ -1,0 +1,456 @@
+<title>色寄せパズル 試作</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Kosugi+Maru&display=swap">
+<style>
+/* 盤面中心の1カラム。上に状況、中央に傾く盤、下に操作 */
+:root {
+  --bg: #eef1f4;
+  --panel: #ffffff;
+  --fg: #1f2a36;
+  --muted: #5e6b78;
+  --line: #d5dce3;
+  --cell: #e3e8ee;
+  --wall: #6b7785;
+  --accent: #2f6fb3;
+  --red: #d9483b;
+  --green: #2f9e5a;
+  --blue: #2f6fd6;
+  --yellow: #e0a91f;
+  --gold: #c99a18;
+  --silver: #8b98a6;
+  --bronze: #b06a3a;
+  --warn-bg: #fdeceb;
+  --warn-fg: #9b2a20;
+  --ok-bg: #e9f6ee;
+  --ok-fg: #1d6b3c;
+  --shadow: rgba(31, 42, 54, .18);
+  --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  --font-body: "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151b22; --panel: #1e2630; --fg: #e6ecf2; --muted: #9aa7b4; --line: #313c48;
+    --cell: #26303b; --wall: #7d8a98; --accent: #6fa6e6;
+    --red: #ef6658; --green: #46bd76; --blue: #5b8ff0; --yellow: #f0be3a;
+    --warn-bg: #3a2220; --warn-fg: #ffb3aa; --ok-bg: #1c3326; --ok-fg: #9be0b5;
+    --shadow: rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151b22; --panel: #1e2630; --fg: #e6ecf2; --muted: #9aa7b4; --line: #313c48;
+  --cell: #26303b; --wall: #7d8a98; --accent: #6fa6e6;
+  --red: #ef6658; --green: #46bd76; --blue: #5b8ff0; --yellow: #f0be3a;
+  --warn-bg: #3a2220; --warn-fg: #ffb3aa; --ok-bg: #1c3326; --ok-fg: #9be0b5;
+  --shadow: rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+header h1 { font-family: var(--font-display); font-weight: 900; font-size: 1.6rem; margin: 0; letter-spacing: .02em; }
+header p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.6; }
+
+.stages { display: flex; flex-wrap: wrap; gap: 6px; }
+.stages button {
+  font: inherit; font-size: .85rem; min-width: 44px; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1.1;
+}
+.stages button[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.stages .m { font-size: .7rem; color: var(--muted); }
+.m.gold { color: var(--gold); } .m.silver { color: var(--silver); } .m.bronze { color: var(--bronze); }
+
+.status { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.status h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; margin: 0; }
+.counts { display: flex; gap: 16px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: .9rem; }
+.counts b { color: var(--fg); font-size: 1.25rem; font-family: var(--font-display); }
+
+/* 盤面：傾きは .board-box の perspective と .board の回転で表現 */
+.board-box { width: min(100%, 420px); margin: 8px auto; perspective: 900px; }
+.board {
+  position: relative; padding: 8px; border-radius: 12px; background: var(--panel);
+  border: 1px solid var(--line); touch-action: none; user-select: none; max-width: 100%;
+  transition: transform .18s ease-out, box-shadow .18s ease-out;
+  box-shadow: 0 6px 16px var(--shadow);
+}
+.board.tilt-left  { transform: rotateY(-8deg); box-shadow: 10px 6px 18px var(--shadow); }
+.board.tilt-right { transform: rotateY(8deg);  box-shadow: -10px 6px 18px var(--shadow); }
+.board.tilt-up    { transform: rotateX(8deg);  box-shadow: 0 14px 18px var(--shadow); }
+.board.tilt-down  { transform: rotateX(-8deg); box-shadow: 0 0 14px var(--shadow); }
+.cells { display: grid; gap: 4px; width: 100%; height: 100%; }
+.cell { background: var(--cell); border-radius: 6px; }
+.cell.wall { background: var(--wall);
+  background-image: repeating-linear-gradient(45deg, transparent 0 5px, rgba(0,0,0,.14) 5px 8px); }
+.layer {
+  position: absolute; inset: 8px; pointer-events: none;
+  --cw: calc((100% - (var(--w) - 1) * 4px) / var(--w));
+  --ch: calc((100% - (var(--h) - 1) * 4px) / var(--h));
+}
+.box {
+  position: absolute; width: var(--cw); height: var(--ch);
+  left: calc(var(--x) * (var(--cw) + 4px)); top: calc(var(--y) * (var(--ch) + 4px));
+  transition-property: left, top; transition-timing-function: cubic-bezier(.5, 0, .85, .55);
+}
+.box i {
+  position: absolute; inset: 6%; border-radius: 22%; display: grid; place-items: center;
+  color: #fff; font-style: normal; font-size: clamp(.7rem, 3.2vw, 1rem); font-weight: 700;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), 0 2px 3px rgba(0,0,0,.15);
+}
+.box.R i { background: var(--red); } .box.G i { background: var(--green); }
+.box.B i { background: var(--blue); } .box.Y i { background: var(--yellow); }
+.box.land i { animation: land .16s ease-out; }
+@keyframes land { 0% { transform: scale(1.08, .9); } 100% { transform: scale(1); } }
+.box.pop i { animation: pop .32s ease-in forwards; }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(0); opacity: 0; } }
+
+.banner {
+  border-radius: 10px; padding: 12px 14px; display: flex; gap: 12px; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; line-height: 1.5;
+}
+.banner.stuck { background: var(--warn-bg); color: var(--warn-fg); }
+.banner.clear { background: var(--ok-bg); color: var(--ok-fg); }
+.banner strong { font-family: var(--font-display); font-size: 1.05rem; }
+
+.controls { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 48px); gap: 6px; justify-content: center; }
+.controls button, .btn {
+  font: inherit; border-radius: 10px; border: 1px solid var(--line); background: var(--panel);
+  color: var(--fg); cursor: pointer; font-size: 1.1rem;
+}
+.controls .up { grid-column: 2; grid-row: 1; }
+.controls .left { grid-column: 1; grid-row: 2; }
+.controls .down { grid-column: 2; grid-row: 2; }
+.controls .right { grid-column: 3; grid-row: 2; }
+.row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.btn { font-size: .95rem; padding: 8px 16px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:active { transform: translateY(1px); }
+
+.rules { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; font-size: .88rem; line-height: 1.7; color: var(--muted); }
+.rules h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: .95rem; color: var(--fg); }
+.rules ul { margin: 0; padding-left: 1.2em; }
+.hint { font-size: .8rem; color: var(--muted); text-align: center; }
+@media (prefers-reduced-motion: reduce) {
+  .board, .box { transition-duration: .01s !important; }
+  .board[class*="tilt-"] { transform: none; }
+  .box.pop i, .box.land i { animation-duration: .01s; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>色寄せパズル</h1>
+    <p>ルール確認用の試作です。盤を傾けてボックスを全部いっせいに滑らせ、同じ色を3個以上くっつけて消します。</p>
+  </header>
+
+  <nav class="stages" id="stages" aria-label="ステージ選択"></nav>
+
+  <div class="status">
+    <h2 id="stageName"></h2>
+    <div class="counts">
+      <span>手数 <b id="moves">0</b></span>
+      <span>お手本 <b id="par">0</b></span>
+    </div>
+  </div>
+
+  <div class="board-box">
+    <div class="board" id="board" aria-label="盤面">
+      <div class="cells" id="cells"></div>
+      <div class="layer" id="layer"></div>
+    </div>
+  </div>
+
+  <div class="banner stuck" id="stuck" hidden>
+    <span><strong>もう解けません</strong><br>どこかで手順を誤りました。最初からやり直しましょう。</span>
+    <button class="btn" id="stuckReset" type="button">やり直す</button>
+  </div>
+  <div class="banner clear" id="clear" hidden>
+    <span><strong id="clearTitle"></strong><br><span id="clearText"></span></span>
+    <button class="btn primary" id="nextBtn" type="button">次のステージへ</button>
+  </div>
+
+  <div class="controls" aria-label="方向">
+    <button class="up" type="button" data-dir="up" aria-label="上へ傾ける">▲</button>
+    <button class="left" type="button" data-dir="left" aria-label="左へ傾ける">◀</button>
+    <button class="down" type="button" data-dir="down" aria-label="下へ傾ける">▼</button>
+    <button class="right" type="button" data-dir="right" aria-label="右へ傾ける">▶</button>
+  </div>
+  <div class="row">
+    <button class="btn" id="resetBtn" type="button">最初からやり直す</button>
+  </div>
+  <p class="hint">盤面をスワイプ、矢印キー、WASD でも傾けられます（R でやり直し）</p>
+
+  <section class="rules">
+    <h3>ルール</h3>
+    <ul>
+      <li>盤を傾けると、すべてのボックスが壁や他のボックスに当たるまで滑ります。灰色の壁は動きません</li>
+      <li>同じ色が上下左右に3個以上つながると、その塊がまとめて消えます（4個以上も全部消えます）</li>
+      <li>全部消せばクリア。お手本手数ちょうどで金、+2手まで銀、それ以上は銅</li>
+      <li>色の残りが1〜2個になるなど、解けなくなったら「もう解けません」と出ます。1手戻しはありません</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+// ===== ロジック =====
+function parse(rows) { return { w: rows[0].length, h: rows.length, c: rows.join('') }; }
+function lineIdx(b, dir, k) {
+  const out = [];
+  if (dir === 'left')  for (let x = 0; x < b.w; x++) out.push(k * b.w + x);
+  if (dir === 'right') for (let x = b.w - 1; x >= 0; x--) out.push(k * b.w + x);
+  if (dir === 'up')    for (let y = 0; y < b.h; y++) out.push(y * b.w + k);
+  if (dir === 'down')  for (let y = b.h - 1; y >= 0; y--) out.push(y * b.w + k);
+  return out;
+}
+// 滑らせた盤面と、各ボックスの移動元→移動先の対応を返す
+function slide(b, dir) {
+  const a = b.c.split(''), map = new Map();
+  const lines = (dir === 'left' || dir === 'right') ? b.h : b.w;
+  for (let k = 0; k < lines; k++) {
+    const idx = lineIdx(b, dir, k);
+    let target = 0;
+    for (let i = 0; i < idx.length; i++) {
+      const ch = a[idx[i]];
+      if (ch === '#') { target = i + 1; continue; }
+      if (ch === '.') continue;
+      map.set(idx[i], { to: idx[target], dist: i - target });
+      if (i !== target) { a[idx[target]] = ch; a[idx[i]] = '.'; }
+      target++;
+    }
+  }
+  return { w: b.w, h: b.h, c: a.join(''), map };
+}
+function findGroups(b) {
+  const seen = new Uint8Array(b.c.length), groups = [];
+  for (let i = 0; i < b.c.length; i++) {
+    const ch = b.c[i];
+    if (seen[i] || ch === '.' || ch === '#') continue;
+    const stack = [i], g = []; seen[i] = 1;
+    while (stack.length) {
+      const p = stack.pop(); g.push(p);
+      const x = p % b.w, y = (p / b.w) | 0, nb = [];
+      if (x > 0) nb.push(p - 1); if (x < b.w - 1) nb.push(p + 1);
+      if (y > 0) nb.push(p - b.w); if (y < b.h - 1) nb.push(p + b.w);
+      for (const q of nb) if (!seen[q] && b.c[q] === ch) { seen[q] = 1; stack.push(q); }
+    }
+    if (g.length >= 3) groups.push(g);
+  }
+  return groups;
+}
+function clearGroups(b, groups) {
+  const a = b.c.split(''); for (const g of groups) for (const p of g) a[p] = '.';
+  return { w: b.w, h: b.h, c: a.join('') };
+}
+function step(b, dir) {
+  const s = slide(b, dir);
+  if (s.c === b.c) return null;
+  const groups = findGroups(s);
+  return { slid: s, groups, next: clearGroups(s, groups) };
+}
+function colorCounts(b) { const m = {}; for (const ch of b.c) if (/[A-Z]/.test(ch)) m[ch] = (m[ch] || 0) + 1; return m; }
+function isCleared(b) { return !/[A-Z]/.test(b.c); }
+function surelyStuck(b) { return Object.values(colorCounts(b)).some(n => n < 3); }
+const DIRS = ['up', 'down', 'left', 'right'];
+function solve(b, limit = 120000) {
+  if (isCleared(b)) return [];
+  if (surelyStuck(b)) return null;
+  const prev = new Map([[b.c, null]]);
+  let frontier = [b];
+  while (frontier.length) {
+    const next = [];
+    for (const cur of frontier) for (const d of DIRS) {
+      const r = step(cur, d); if (!r) continue;
+      const nb = r.next; if (prev.has(nb.c)) continue;
+      prev.set(nb.c, [cur.c, d]);
+      if (isCleared(nb)) {
+        const path = []; let k = nb.c;
+        while (prev.get(k)) { const [pk, pd] = prev.get(k); path.unshift(pd); k = pk; }
+        return path;
+      }
+      if (surelyStuck(nb)) continue;
+      if (prev.size > limit) return 'limit';
+      next.push(nb);
+    }
+    frontier = next;
+  }
+  return null;
+}
+
+// ===== ステージ（お手本手数はソルバーで検証済み） =====
+const STAGES = [
+  { name: 'はじめの一歩', grid: ["R...R", ".....", ".....", ".....", "R...."] },
+  { name: '二色', grid: ["R..GR", "....G", ".....", "..G.R", "....."] },
+  { name: '壁のある盤', grid: ["R..#.", ".....", "#.R..", "..#.R", "....."] },
+  { name: '三色', grid: ["....G", "B....", ".R..#", ".BBR.", "..RGG"] },
+  { name: '消しすぎ注意', grid: ["BR..R", "..B..", "R..#.", "..B#R", "RR..."] },
+  { name: '赤が六つ', grid: ["R...R", "..BRB", "....R", "..#R#", ".B.R."] },
+  { name: '広い盤', grid: ["..R..R", "..B.BB", "BG.B..", "R.....", "B.G...", ".##.G#"] },
+  { name: '七手の道', grid: ["..B...", "#..B..", ".....B", ".....B", "BG#G..", "#GRRBR"] },
+];
+STAGES.forEach(s => { const sol = solve(parse(s.grid)); s.par = Array.isArray(sol) ? sol.length : 0; s.silver = 2; });
+
+const MEDALS = { gold: '金', silver: '銀', bronze: '銅' };
+const RANK = { bronze: 1, silver: 2, gold: 3 };
+function loadMedals() { try { return JSON.parse(localStorage.getItem('yose-medals') || '{}'); } catch (e) { return {}; } }
+function saveMedals(m) { try { localStorage.setItem('yose-medals', JSON.stringify(m)); } catch (e) {} }
+let medals = loadMedals();
+
+// ===== 状態と描画 =====
+const $ = id => document.getElementById(id);
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const GLYPH = { R: '●', G: '▲', B: '■', Y: '◆' };
+let stageIdx = 0, board, moves = 0, state = 'play', busy = false;
+let boxes = new Map(); // 盤面上の位置 → ボックス要素
+const wait = ms => new Promise(r => setTimeout(r, reduceMotion ? 0 : ms));
+
+function renderStages() {
+  const nav = $('stages'); nav.innerHTML = '';
+  STAGES.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('aria-current', i === stageIdx ? 'true' : 'false');
+    const m = medals[i];
+    b.innerHTML = `<span>${i + 1}</span><span class="m ${m || ''}">${m ? MEDALS[m] : '－'}</span>`;
+    b.addEventListener('click', () => { if (!busy) loadStage(i); });
+    nav.appendChild(b);
+  });
+}
+
+function placeBox(el, pos) {
+  el.style.setProperty('--x', pos % board.w);
+  el.style.setProperty('--y', Math.floor(pos / board.w));
+}
+
+function buildBoard() {
+  const el = $('board'), cells = $('cells'), layer = $('layer');
+  el.style.aspectRatio = `${board.w} / ${board.h}`;
+  cells.style.gridTemplateColumns = `repeat(${board.w}, 1fr)`;
+  cells.style.gridTemplateRows = `repeat(${board.h}, 1fr)`;
+  layer.style.setProperty('--w', board.w);
+  layer.style.setProperty('--h', board.h);
+  cells.innerHTML = ''; layer.innerHTML = ''; boxes = new Map();
+  for (let i = 0; i < board.c.length; i++) {
+    const ch = board.c[i], cell = document.createElement('div');
+    cell.className = 'cell' + (ch === '#' ? ' wall' : '');
+    cells.appendChild(cell);
+    if (/[A-Z]/.test(ch)) {
+      const box = document.createElement('div');
+      box.className = 'box ' + ch;
+      box.innerHTML = `<i>${GLYPH[ch] || ''}</i>`;
+      box.style.transitionDuration = '0ms';
+      placeBox(box, i);
+      layer.appendChild(box);
+      boxes.set(i, box);
+    }
+  }
+}
+
+function updateStatus() {
+  const s = STAGES[stageIdx];
+  $('stageName').textContent = `${stageIdx + 1}. ${s.name}`;
+  $('moves').textContent = moves;
+  $('par').textContent = s.par;
+  $('stuck').hidden = state !== 'stuck';
+  $('clear').hidden = state !== 'clear';
+}
+
+function loadStage(i) {
+  stageIdx = i; board = parse(STAGES[i].grid); moves = 0; state = 'play'; busy = false;
+  $('board').className = 'board';
+  buildBoard(); renderStages(); updateStatus();
+}
+
+async function doMove(dir) {
+  if (state !== 'play' || busy) return;
+  const r = step(board, dir);
+  if (!r) {
+    // 動かない方向でも少しだけ傾けて手応えを返す
+    busy = true;
+    $('board').classList.add('tilt-' + dir);
+    await wait(160);
+    $('board').classList.remove('tilt-' + dir);
+    await wait(120);
+    busy = false;
+    return;
+  }
+  busy = true; moves++; updateStatus();
+
+  // 1. 盤を傾ける
+  const boardEl = $('board');
+  boardEl.classList.add('tilt-' + dir);
+  await wait(110);
+
+  // 2. ボックスを滑らせる（距離が長いほど時間がかかる）
+  let longest = 0;
+  const moved = new Map();
+  for (const [from, el] of boxes) {
+    const m = r.slid.map.get(from);
+    const dur = m.dist ? 90 + m.dist * 55 : 0;
+    longest = Math.max(longest, dur);
+    el.style.transitionDuration = dur + 'ms';
+    placeBox(el, m.to);
+    if (m.dist) setTimeout(() => { el.classList.remove('land'); void el.offsetWidth; el.classList.add('land'); }, reduceMotion ? 0 : dur);
+    moved.set(m.to, el);
+  }
+  boxes = moved;
+  await wait(longest + 60);
+
+  // 3. 揃った塊を消す
+  if (r.groups.length) {
+    const pops = r.groups.flat();
+    for (const p of pops) boxes.get(p).classList.add('pop');
+    await wait(340);
+    for (const p of pops) { boxes.get(p).remove(); boxes.delete(p); }
+  }
+
+  // 4. 盤を戻す
+  boardEl.classList.remove('tilt-' + dir);
+  board = r.next;
+  await wait(120);
+  busy = false;
+
+  if (isCleared(board)) { state = 'clear'; finishClear(); }
+  else if (solve(board) === null) state = 'stuck';
+  updateStatus();
+}
+
+function finishClear() {
+  const s = STAGES[stageIdx];
+  const medal = moves <= s.par ? 'gold' : moves <= s.par + s.silver ? 'silver' : 'bronze';
+  const prevM = medals[stageIdx];
+  if (!prevM || RANK[medal] > RANK[prevM]) { medals[stageIdx] = medal; saveMedals(medals); }
+  $('clearTitle').textContent = `クリア！ ${MEDALS[medal]}賞`;
+  $('clearText').textContent = medal === 'gold'
+    ? `${moves}手。お手本どおりの最短手数です。`
+    : `${moves}手（お手本は${s.par}手）。もっと短い手順があります。`;
+  $('nextBtn').hidden = stageIdx >= STAGES.length - 1;
+  renderStages();
+}
+
+// ===== 入力 =====
+document.querySelectorAll('.controls button').forEach(b => b.addEventListener('click', () => doMove(b.dataset.dir)));
+$('resetBtn').addEventListener('click', () => { if (!busy) loadStage(stageIdx); });
+$('stuckReset').addEventListener('click', () => loadStage(stageIdx));
+$('nextBtn').addEventListener('click', () => loadStage(Math.min(stageIdx + 1, STAGES.length - 1)));
+document.addEventListener('keydown', e => {
+  const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
+  const d = map[e.key] || map[(e.key || '').toLowerCase()];
+  if (d) { e.preventDefault(); doMove(d); }
+  if ((e.key === 'r' || e.key === 'R') && !busy) loadStage(stageIdx);
+});
+let start = null;
+$('board').addEventListener('pointerdown', e => { start = { x: e.clientX, y: e.clientY }; });
+$('board').addEventListener('pointerup', e => {
+  if (!start) return;
+  const dx = e.clientX - start.x, dy = e.clientY - start.y; start = null;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+  doMove(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+});
+
+loadStage(0);
+</script>
