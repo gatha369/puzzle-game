@@ -53,6 +53,7 @@ export class BoardView {
       if (cell.type === 'box') {
         const box = document.createElement('div');
         box.className = 'box ' + cell.color;
+        box.dataset.color = cell.color;
         box.innerHTML = `<i>${motifSvg(cell.color)}</i>`;
         box.style.transitionDuration = '0ms';
         this.placeBox(box, i);
@@ -109,6 +110,14 @@ export class BoardView {
     // 4. 盤を戻す
     boardEl.classList.remove('tilt-' + dir);
     await wait(120);
+  }
+
+  /** ボックスの画面上の中心と色（パーティクル用） */
+  boxInfo(pos: number): { x: number; y: number; color: string } | null {
+    const el = this.boxes.get(pos);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, color: el.dataset.color ?? '' };
   }
 
   /** 端末の傾きに合わせた表示（null で解除）。角度は度、上限は呼び出し側で制限済み */

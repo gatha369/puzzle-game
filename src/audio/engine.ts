@@ -76,6 +76,15 @@ export function setSfxEnabled(on: boolean) {
   fade(sfxBus, on ? SFX_VOLUME : 0);
 }
 
+/** ファンファーレの間だけ BGM を小さくする */
+export function duckBgm(seconds: number) {
+  if (!ctx || !bgmBus || !enabled.bgm) return;
+  const g = bgmBus.gain, t = ctx.currentTime;
+  g.cancelScheduledValues(t);
+  g.setTargetAtTime(BGM_VOLUME * 0.25, t, 0.05);
+  g.setTargetAtTime(BGM_VOLUME, t + seconds, 0.4);
+}
+
 export function isBgmEnabled() {
   return enabled.bgm;
 }

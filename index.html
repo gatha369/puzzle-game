@@ -90,10 +90,6 @@
             <span><strong>もう解けません</strong><br>どこかで手順を誤りました。最初からやり直しましょう。</span>
             <button class="btn" id="stuckReset" type="button">やり直す</button>
           </div>
-          <div class="banner clear" id="clear" hidden>
-            <span><strong id="clearTitle"></strong><br><span id="clearText"></span></span>
-            <button class="btn primary" id="nextBtn" type="button">次のステージへ</button>
-          </div>
           <div class="banner info" id="tiltGuide" hidden>
             <span><strong>画面の回転をロックしてください</strong><br>端末を傾けると画面が横向きに回ってしまうことがあります。縦向きで回転ロックをオンにして遊んでください。</span>
             <button class="btn" id="tiltGuideOk" type="button">OK</button>
@@ -129,6 +125,23 @@
         </ul>
       </section>
     </div>
+    <!-- クリア画面 -->
+    <div class="celebrate" id="clear" role="dialog" aria-modal="true" aria-labelledby="celTitle" hidden>
+      <div class="cel-card">
+        <div class="cel-crown"></div>
+        <p class="cel-title" id="celTitle"></p>
+        <div class="cel-medal"></div>
+        <p class="cel-label"></p>
+        <p class="cel-moves"></p>
+        <p class="cel-text"></p>
+        <div class="cel-buttons">
+          <button class="btn primary" id="nextBtn" type="button">次のステージへ</button>
+          <button class="btn" id="retryBtn" type="button">もう一度</button>
+        </div>
+      </div>
+    </div>
+    <!-- 星・紙吹雪・花火 -->
+    <canvas class="fx" id="fx" aria-hidden="true"></canvas>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

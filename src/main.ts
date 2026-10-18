@@ -1,12 +1,14 @@
 import './style.css';
 import { startBgm, stopBgm } from './audio/bgm.ts';
-import { installUnlock, onUnlock, setBgmEnabled, setSfxEnabled } from './audio/engine.ts';
+import { duckBgm, installUnlock, onUnlock, setBgmEnabled, setSfxEnabled } from './audio/engine.ts';
 import { playSfx, type SfxName } from './audio/sfx.ts';
 import { isCleared, parseGrid, step, type Board, type Direction } from './game/index.ts';
 import { bindKeyboard } from './input/keyboard.ts';
 import { bindSwipe } from './input/swipe.ts';
 import { detectTiltSupport, isNaturalOrientation, TiltControl, tiltNeedsPermission } from './input/tilt.ts';
-import { BoardView } from './render/boardView.ts';
+import { BoardView, reduceMotion } from './render/boardView.ts';
+import { Celebrate } from './render/celebrate.ts';
+import { Particles } from './render/particles.ts';
 import { isStuck } from './solver/solver.ts';
 import { STAGES } from './stages/index.ts';
 import { loadMedals, medalFor, recordMedal, type Medal } from './storage/medals.ts';
@@ -15,6 +17,9 @@ import { loadSettings, saveSettings } from './storage/settings.ts';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const MEDAL_LABEL: Record<Medal, string> = { gold: '金', silver: '銀', bronze: '銅' };
 const FANFARE: Record<Medal, SfxName> = { gold: 'fanfareGold', silver: 'fanfareSilver', bronze: 'fanfareBronze' };
+const FANFARE_SEC: Record<Medal, number> = { gold: 2.4, silver: 1.2, bronze: 0.8 };
+// 消えるときの星の色（モチーフの色）
+const BURST_COLOR: Record<string, string> = { R: '#ff4d5e', B: '#62b1ff', G: '#3fd473', Y: '#ffd23f', P: '#c25ef0' };
 
 // ===== 状態 =====
 let stageIdx = 0;
@@ -25,6 +30,8 @@ let busy = false; // 演出中は入力を受け付けない
 let medals = loadMedals();
 
 const view = new BoardView($('board'), $('cells'), $('layer'));
+const fx = new Particles($<HTMLCanvasElement>('fx'), !reduceMotion); // 動きを減らす設定ではパーティクルを出さない
+const celebrate = new Celebrate($('clear'), fx);
 
 // ===== 描画 =====
 function renderStages() {
@@ -56,6 +63,7 @@ function loadStage(i: number) {
   moves = 0;
   state = 'play';
   busy = false;
+  fx.clear();
   view.build(board);
   renderStages();
   updateStatus();
@@ -88,11 +96,8 @@ function finishClear() {
   const medal = medalFor(moves, s.par, s.silverMargin);
   medals = recordMedal(s.id, medal);
   playSfx(FANFARE[medal]);
-  $('clearTitle').textContent = `クリア！ ${MEDAL_LABEL[medal]}賞`;
-  $('clearText').textContent = medal === 'gold'
-    ? `${moves}手。お手本どおりの最短手数です。`
-    : `${moves}手（お手本は${s.par}手）。もっと短い手順があります。`;
-  $('nextBtn').hidden = stageIdx >= STAGES.length - 1;
+  duckBgm(FANFARE_SEC[medal]);
+  celebrate.show({ medal, moves, par: s.par, hasNext: stageIdx < STAGES.length - 1 });
   renderStages();
 }
 
@@ -103,6 +108,7 @@ document.querySelectorAll<HTMLButtonElement>('.controls button').forEach((b) =>
 $('resetBtn').addEventListener('click', resetIfIdle);
 $('stuckReset').addEventListener('click', () => loadStage(stageIdx));
 $('nextBtn').addEventListener('click', () => loadStage(Math.min(stageIdx + 1, STAGES.length - 1)));
+$('retryBtn').addEventListener('click', () => loadStage(stageIdx));
 bindKeyboard(tryMove, resetIfIdle);
 bindSwipe(view.el, tryMove);
 
@@ -168,7 +174,12 @@ view.hooks = {
   onBump: () => playSfx('bump'),
   onTilt: () => playSfx('tilt'),
   onLand: () => playSfx('land'),
-  onPop: (groups) => playSfx('pop', groups.length),
+  onPop: (groups) => {
+    playSfx('pop', groups.length);
+    // ふくらみきった頃（pop アニメーションの 40%）に星をはじけさせる
+    const boxes = groups.flat().map((p) => view.boxInfo(p)).filter((b) => b !== null);
+    setTimeout(() => { for (const b of boxes) fx.burst(b.x, b.y, BURST_COLOR[b.color] ?? '#ffd23f'); }, 130);
+  },
 };
 
 function renderSoundButtons() {
