@@ -101,6 +101,11 @@
         </div>
       </div>
       <p class="tilt-note" id="tiltNote" hidden></p>
+      <!-- 新アイテムの紹介（最初の1手まで） -->
+      <div class="intro" id="intro" hidden>
+        <div class="intro-icons" id="introIcons"></div>
+        <p><strong id="introTitle"></strong><span id="introText"></span></p>
+      </div>
 
       <div class="dock">
         <div class="side">
@@ -124,7 +129,9 @@
         <ul>
           <li>盤を傾けると、すべてのお菓子が壁や他のお菓子に当たるまで滑ります。ビスケットの壁は動きません</li>
           <li>同じお菓子が上下左右に3個以上つながると、その塊がまとめて消えます（4個以上も全部消えます）</li>
-          <li>全部消せばクリア。お手本手数ちょうどで金、+2手まで銀、それ以上は銅</li>
+          <li>虹色のレインボーキャンディ（9面〜）は、どのお菓子とも揃います</li>
+          <li>はちみつ床（13面〜）に滑り込んだお菓子は、そこでぴたっと止まります。乗っているお菓子は次に傾けると離れられます</li>
+          <li>全部消せばクリア（レインボーキャンディも残さず消す）。お手本手数ちょうどで金、+2手まで銀、それ以上は銅</li>
           <li>同じお菓子の残りが1〜2個になるなど、解けなくなったら「もう解けません」と出ます。1手戻しはありません</li>
         </ul>
       </section>
@@ -132,6 +139,11 @@
     <!-- クリア画面 -->
     <div class="celebrate" id="clear" role="dialog" aria-modal="true" aria-labelledby="celTitle" hidden>
       <div class="cel-card">
+        <div class="cel-all" hidden>
+          <div class="cel-all-ribbon"></div>
+          <p class="cel-all-title"></p>
+          <p class="cel-all-text"></p>
+        </div>
         <div class="cel-crown"></div>
         <p class="cel-title" id="celTitle"></p>
         <div class="cel-medal"></div>

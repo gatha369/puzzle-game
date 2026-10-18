@@ -72,8 +72,8 @@ export class Particles {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  /** ブロックが消えるとき：中心から星がはじけて飛び散る */
-  burst(x: number, y: number, color: string, count = 7, speed = 260) {
+  /** ブロックが消えるとき：中心から星がはじけて飛び散る（色を配列で渡すと順に使う） */
+  burst(x: number, y: number, color: string | readonly string[], count = 7, speed = 260) {
     if (!this.enabled) return;
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 + rand(-0.3, 0.3);
@@ -81,7 +81,8 @@ export class Particles {
       this.add({
         kind: 'star', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - speed * 0.35,
         life: 0, max: rand(0.5, 0.8), size: rand(5, 9), rot: rand(0, 6), vr: rand(-8, 8),
-        color: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#ffe066' : color, gravity: GRAVITY * 0.7, drag: 2.2,
+        color: typeof color !== 'string' ? color[i % color.length] : i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#ffe066' : color,
+        gravity: GRAVITY * 0.7, drag: 2.2,
       });
     }
   }

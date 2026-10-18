@@ -1,13 +1,17 @@
-// ブロックの SVG モチーフ。色だけでなく形でも区別できるようにする
+// ブロックと特殊な床の SVG モチーフ。色だけでなく形でも区別できるようにする
 // グラデーションとシンボルはページに1つだけ置き（スプライト）、各ブロックは <use> で参照する
 import type { Color } from '../game/types.ts';
 
-export const MOTIF_NAMES: Record<Color, string> = {
+/** 色の代わりに '*' でレインボーキャンディ */
+export type Motif = Color | '*';
+
+export const MOTIF_NAMES: Record<Motif, string> = {
   R: 'ロリポップ',
   B: '宝石',
   G: '魔法のステッキ',
   Y: 'キャンディ',
   P: 'ハートのジュエリー',
+  '*': 'レインボーキャンディ',
 };
 
 // 足元の影（全モチーフ共通）
@@ -15,6 +19,20 @@ const SHADOW = '<ellipse cx="50" cy="94" rx="24" ry="4" fill="rgba(60,20,50,.18)
 // 4枚羽のキラキラ
 const sparkle = (x: number, y: number, s: number) =>
   `<path transform="translate(${x} ${y}) scale(${s})" d="M0-10C1 -2 2-1 10 0 2 1 1 2 0 10-1 2-2 1-10 0-2-1-1-2 0-10Z" fill="#fff"/>`;
+
+// レインボーキャンディの渦巻き：中心から縁へ曲がりながら広がる6枚の羽根
+const RAINBOW = ['#ff4d5e', '#ff9f43', '#ffd23f', '#3fd473', '#62b1ff', '#c25ef0'];
+const swirl = (cx: number, cy: number, r: number) => RAINBOW.map((color, i) => {
+  const pt = (deg: number, rr: number) => {
+    const a = (deg * Math.PI) / 180;
+    return `${(cx + Math.cos(a) * rr).toFixed(1)} ${(cy + Math.sin(a) * rr).toFixed(1)}`;
+  };
+  const a0 = i * 60 - 90, a1 = a0 + 60;
+  return `<path d="M${cx} ${cy}Q${pt(a0 - 40, r * 0.62)} ${pt(a0, r)}A${r} ${r} 0 0 1 ${pt(a1, r)}Q${pt(a1 - 40, r * 0.62)} ${cx} ${cy}Z" fill="${color}"/>`;
+}).join('');
+
+// 正六角形のハニカム（はちみつ床の下地）
+const HEX = 'M10 0L20 5.77V17.32L10 23.09L0 17.32V5.77Z';
 
 const SPRITE = `
 <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
@@ -26,6 +44,12 @@ const SPRITE = `
     <linearGradient id="mg-Yw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a6"/><stop offset="1" stop-color="#ffcc33"/></linearGradient>
     <radialGradient id="mg-P" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#f6c2ff"/><stop offset=".55" stop-color="#c25ef0"/><stop offset="1" stop-color="#8a26c4"/></radialGradient>
     <clipPath id="mc-Y"><ellipse cx="50" cy="50" rx="24" ry="21"/></clipPath>
+    <radialGradient id="mg-rb" cx=".38" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#5a1f7a" stop-opacity=".25"/></radialGradient>
+    <linearGradient id="mg-comb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c2"/><stop offset="1" stop-color="#ffd978"/></linearGradient>
+    <radialGradient id="mg-honey" cx=".4" cy=".32" r=".8"><stop offset="0" stop-color="#ffe27a"/><stop offset=".55" stop-color="#ffb81f"/><stop offset="1" stop-color="#e08a00"/></radialGradient>
+    <pattern id="mp-comb" width="20" height="34.64" patternUnits="userSpaceOnUse" patternTransform="translate(-4 -6)">
+      <path d="${HEX}M10 23.09V34.64" fill="none" stroke="#efb23a" stroke-width="1.6" opacity=".55"/>
+    </pattern>
   </defs>
 
   <symbol id="motif-R" viewBox="0 0 100 100">
@@ -84,6 +108,35 @@ const SPRITE = `
     <ellipse cx="27" cy="27" rx="9" ry="5" transform="rotate(-35 27 27)" fill="#fff" opacity=".75"/>
     ${sparkle(76, 26, 0.5)}
   </symbol>
+
+  <symbol id="motif-rainbow" viewBox="0 0 100 100">
+    ${SHADOW}
+    <circle cx="50" cy="48" r="37" fill="#fff" stroke="#8a3fbf" stroke-width="2.5"/>
+    ${swirl(50, 48, 33)}
+    <circle cx="50" cy="48" r="33" fill="url(#mg-rb)"/>
+    <circle cx="50" cy="48" r="35" fill="none" stroke="#fff" stroke-width="3"/>
+    <circle cx="50" cy="48" r="37" fill="none" stroke="#8a3fbf" stroke-width="2.5"/>
+    <path transform="translate(50 48) scale(13)" d="M0-1L.29-.4L.95-.31L.48.15L.59.81L0 .5L-.59.81L-.48.15L-.95-.31L-.29-.4Z"
+      fill="#fff" stroke="#8a3fbf" stroke-width=".12" stroke-linejoin="round"/>
+    <ellipse cx="33" cy="28" rx="10" ry="5.5" transform="rotate(-35 33 28)" fill="#fff" opacity=".8"/>
+    ${sparkle(86, 14, 0.6)}
+    ${sparkle(12, 80, 0.45)}
+  </symbol>
+
+  <symbol id="floor-honey" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="url(#mg-comb)"/>
+    <rect width="100" height="100" fill="url(#mp-comb)"/>
+    <!-- 下にたまったはちみつ -->
+    <ellipse cx="54" cy="86" rx="40" ry="11" fill="url(#mg-honey)" stroke="#c97800" stroke-width="2"/>
+    <ellipse cx="42" cy="83" rx="12" ry="3" fill="#fff" opacity=".5"/>
+    <!-- 上の縁から垂れるはちみつ -->
+    <path d="M0 0H100V30C96 30 93 34 93 42C93 50 85 50 85 42C85 34 81 29 74 31C66 33 66 50 63 60C60 69 51 68 51 59C51 48 47 37 39 37C31 37 31 47 27 47C22 47 22 35 15 33C8 31 6 40 0 40Z"
+      fill="url(#mg-honey)" stroke="#c97800" stroke-width="2"/>
+    <path d="M8 18C30 12 62 12 92 18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+    <ellipse cx="57" cy="56" rx="2.2" ry="4" fill="#fff" opacity=".6"/>
+    <!-- 落ちるしずく -->
+    <path d="M27 58C27 58 22 65 22 68A5 5 0 0 0 32 68C32 65 27 58 27 58Z" fill="url(#mg-honey)" stroke="#c97800" stroke-width="1.5"/>
+  </symbol>
 </svg>`;
 
 let injected = false;
@@ -96,6 +149,12 @@ export function injectMotifSprite() {
 }
 
 /** ブロック1個分の SVG */
-export function motifSvg(color: Color): string {
-  return `<svg viewBox="0 0 100 100" role="img" aria-label="${MOTIF_NAMES[color]}"><use href="#motif-${color}"/></svg>`;
+export function motifSvg(motif: Motif): string {
+  const id = motif === '*' ? 'rainbow' : motif;
+  return `<svg viewBox="0 0 100 100" role="img" aria-label="${MOTIF_NAMES[motif]}"><use href="#motif-${id}"/></svg>`;
+}
+
+/** はちみつ床1マス分の SVG（マス全体に広げる） */
+export function honeySvg(): string {
+  return '<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><use href="#floor-honey"/></svg>';
 }

@@ -1,16 +1,23 @@
 import { boardKey } from '../game/board.ts';
-import { colorCounts, isCleared, step } from '../game/move.ts';
+import { colorCounts, isCleared, rainbowCount, step } from '../game/move.ts';
 import { DIRECTIONS, type Board, type Direction } from '../game/types.ts';
 
 /** 探索する状態数の上限。超えたら「判定不能」 */
-export const SOLVE_LIMIT = 120000;
+export const SOLVE_LIMIT = 200000;
 
 /** 最短手順 / 解けない(null) / 上限超えで判定不能('limit') */
 export type SolveResult = Direction[] | null | 'limit';
 
-/** 簡易判定：いずれかの色の残数が 1 または 2 なら確実に詰み */
+/**
+ * 簡易判定：確実に詰みなら true
+ *   - ある色について「その色の数＋レインボーの数」が3未満
+ *   - 色のボックスがなくなり、レインボーだけが1〜2個残った
+ */
 export function surelyStuck(board: Board): boolean {
-  return Object.values(colorCounts(board)).some((n) => n < 3);
+  const counts = Object.values(colorCounts(board));
+  const r = rainbowCount(board);
+  if (counts.some((n) => n + r < 3)) return true;
+  return counts.length === 0 && r > 0 && r < 3;
 }
 
 /** 幅優先探索で最短手順を求める */

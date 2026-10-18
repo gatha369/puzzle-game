@@ -1,4 +1,4 @@
-import { EMPTY } from './board.ts';
+import { EMPTY, isBox } from './board.ts';
 import type { Board, Cell, Color, Direction } from './types.ts';
 
 /** 各ボックスの移動元 index → 移動先 index と移動マス数（動かないボックスも dist 0 で入る） */
@@ -27,8 +27,12 @@ function lineIndices(board: Board, dir: Direction, k: number): number[] {
   return out;
 }
 
-/** すべてのボックスを dir へ、壁・端・他のボックスに当たるまで滑らせる */
+/**
+ * すべてのボックスを dir へ、壁・端・他のボックスに当たるまで滑らせる。
+ * はちみつ床に「入った」ボックスはそこで止まる（手の開始時に乗っていたボックスは離れられる）
+ */
 export function slide(board: Board, dir: Direction): SlideResult {
+  const { floor } = board;
   const cells = board.cells.slice();
   const moves = new Map<number, { to: number; dist: number }>();
   const lines = dir === 'left' || dir === 'right' ? board.height : board.width;
@@ -39,52 +43,65 @@ export function slide(board: Board, dir: Direction): SlideResult {
       const cell = cells[idx[i]];
       if (cell.type === 'wall') { target = i + 1; continue; }
       if (cell.type === 'empty') continue;
-      moves.set(idx[i], { to: idx[target], dist: i - target });
-      if (i !== target) { cells[idx[target]] = cell; cells[idx[i]] = EMPTY; }
-      target++;
+      // 進路（i-1 から target まで）で最初に出会うはちみつ床
+      let stop = target;
+      for (let j = i - 1; j >= target; j--) if (floor[idx[j]] === 'honey') { stop = j; break; }
+      moves.set(idx[i], { to: idx[stop], dist: i - stop });
+      if (i !== stop) { cells[idx[stop]] = cell; cells[idx[i]] = EMPTY; }
+      target = stop + 1;
     }
   }
-  return { board: { width: board.width, height: board.height, cells }, moves };
+  return { board: { ...board, cells }, moves };
 }
 
-function boxColor(cell: Cell): Color | null {
-  return cell.type === 'box' ? cell.color : null;
+function neighbors(w: number, h: number, p: number): number[] {
+  const x = p % w, y = (p / w) | 0;
+  const nb: number[] = [];
+  if (x > 0) nb.push(p - 1);
+  if (x < w - 1) nb.push(p + 1);
+  if (y > 0) nb.push(p - w);
+  if (y < h - 1) nb.push(p + w);
+  return nb;
 }
 
 /**
- * 消える塊を探す：同じ色が上下左右で3個以上つながったもの（斜めは含まない）。
+ * 消える塊を探す：上下左右で3個以上つながったもの（斜めは含まない）。
+ *   - 色ごとに「その色＋レインボー」でつながった塊を探し、その色が1個以上入っていれば消える
+ *   - レインボーは隣り合う複数の色の塊に同時に参加できる（同じ index が複数の塊に入る）
+ *   - レインボーだけで3個以上つながった塊も消える
  * 消え方のルールはこの関数に閉じ込めておき、将来差し替えられるようにする。
  */
 export function findGroups(board: Board): number[][] {
   const { width: w, height: h, cells } = board;
-  const seen = new Uint8Array(cells.length);
+  const colors = new Set<Color>(); // 盤面に出てくる順（試作と同じ順に塊を返す）
+  for (const cell of cells) if (cell.type === 'box') colors.add(cell.color);
   const groups: number[][] = [];
-  for (let i = 0; i < cells.length; i++) {
-    const color = boxColor(cells[i]);
-    if (seen[i] || color === null) continue;
-    const stack = [i];
-    const group: number[] = [];
-    seen[i] = 1;
-    while (stack.length) {
-      const p = stack.pop()!;
-      group.push(p);
-      const x = p % w, y = (p / w) | 0;
-      const nb: number[] = [];
-      if (x > 0) nb.push(p - 1);
-      if (x < w - 1) nb.push(p + 1);
-      if (y > 0) nb.push(p - w);
-      if (y < h - 1) nb.push(p + w);
-      for (const q of nb) if (!seen[q] && boxColor(cells[q]) === color) { seen[q] = 1; stack.push(q); }
+  const scan = (match: (c: Cell) => boolean, needColor: boolean) => {
+    const seen = new Uint8Array(cells.length);
+    for (let i = 0; i < cells.length; i++) {
+      if (seen[i] || !match(cells[i])) continue;
+      const stack = [i];
+      const group: number[] = [];
+      let hasColor = false;
+      seen[i] = 1;
+      while (stack.length) {
+        const p = stack.pop()!;
+        group.push(p);
+        if (cells[p].type === 'box') hasColor = true;
+        for (const q of neighbors(w, h, p)) if (!seen[q] && match(cells[q])) { seen[q] = 1; stack.push(q); }
+      }
+      if (group.length >= 3 && (!needColor || hasColor)) groups.push(group);
     }
-    if (group.length >= 3) groups.push(group);
-  }
+  };
+  for (const color of colors) scan((c) => c.type === 'rainbow' || (c.type === 'box' && c.color === color), true);
+  scan((c) => c.type === 'rainbow', false);
   return groups;
 }
 
 export function clearGroups(board: Board, groups: readonly number[][]): Board {
   const cells = board.cells.slice();
   for (const g of groups) for (const p of g) cells[p] = EMPTY;
-  return { width: board.width, height: board.height, cells };
+  return { ...board, cells };
 }
 
 function sameCells(a: Board, b: Board): boolean {
@@ -105,12 +122,20 @@ export function move(board: Board, dir: Direction): Board {
   return step(board, dir)?.next ?? board;
 }
 
+/** 色ごとの残数（レインボーは含めない。rainbowCount で数える） */
 export function colorCounts(board: Board): Partial<Record<Color, number>> {
   const m: Partial<Record<Color, number>> = {};
   for (const cell of board.cells) if (cell.type === 'box') m[cell.color] = (m[cell.color] ?? 0) + 1;
   return m;
 }
 
+export function rainbowCount(board: Board): number {
+  let n = 0;
+  for (const cell of board.cells) if (cell.type === 'rainbow') n++;
+  return n;
+}
+
+/** レインボーも含めてボックスが全部消えたらクリア */
 export function isCleared(board: Board): boolean {
-  return board.cells.every((c) => c.type !== 'box');
+  return !board.cells.some(isBox);
 }

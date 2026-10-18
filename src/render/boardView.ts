@@ -1,6 +1,6 @@
 // 盤面の DOM 描画と1手の演出（傾き→滑る→消える→戻る）。数値は docs/prototype.html のまま
 import type { Board, Direction, StepResult } from '../game/index.ts';
-import { injectMotifSprite, motifSvg } from './motifs.ts';
+import { honeySvg, injectMotifSprite, motifSvg } from './motifs.ts';
 
 export const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, reduceMotion ? 0 : ms));
@@ -10,6 +10,8 @@ export type BoardHooks = {
   onBump?: () => void;
   onTilt?: () => void;
   onLand?: () => void;
+  /** はちみつ床で止まった */
+  onStick?: () => void;
   onPop?: (groups: number[][]) => void;
 };
 
@@ -48,13 +50,16 @@ export class BoardView {
     this.boxes = new Map();
     board.cells.forEach((cell, i) => {
       const c = document.createElement('div');
-      c.className = 'cell' + (cell.type === 'wall' ? ' wall' : '');
+      const honey = board.floor[i] === 'honey';
+      c.className = 'cell' + (cell.type === 'wall' ? ' wall' : '') + (honey ? ' honey' : '');
+      if (honey) c.innerHTML = honeySvg();
       cells.appendChild(c);
-      if (cell.type === 'box') {
+      if (cell.type === 'box' || cell.type === 'rainbow') {
+        const motif = cell.type === 'box' ? cell.color : '*';
         const box = document.createElement('div');
-        box.className = 'box ' + cell.color;
-        box.dataset.color = cell.color;
-        box.innerHTML = `<i>${motifSvg(cell.color)}</i>`;
+        box.className = 'box ' + (cell.type === 'box' ? cell.color : 'rainbow');
+        box.dataset.color = motif;
+        box.innerHTML = `<i>${motifSvg(motif)}</i>`;
         box.style.transitionDuration = '0ms';
         this.placeBox(box, i);
         layer.appendChild(box);
@@ -91,7 +96,14 @@ export class BoardView {
       el.style.transitionDuration = dur + 'ms';
       this.placeBox(el, m.to);
       if (m.dist) {
-        setTimeout(() => { el.classList.remove('land'); void el.offsetWidth; el.classList.add('land'); this.hooks.onLand?.(); }, reduceMotion ? 0 : dur);
+        // はちみつ床に止まったら「ぺたっ」とつぶれる
+        const stick = r.slid.floor[m.to] === 'honey';
+        setTimeout(() => {
+          el.classList.remove('land', 'stick');
+          void el.offsetWidth;
+          el.classList.add(stick ? 'stick' : 'land');
+          if (stick) this.hooks.onStick?.(); else this.hooks.onLand?.();
+        }, reduceMotion ? 0 : dur);
       }
       moved.set(m.to, el);
     }
@@ -100,7 +112,7 @@ export class BoardView {
 
     // 3. 揃った塊を消す
     if (r.groups.length) {
-      const pops = r.groups.flat();
+      const pops = [...new Set(r.groups.flat())]; // レインボーは複数の塊に入ることがある
       for (const p of pops) this.boxes.get(p)!.classList.add('pop');
       this.hooks.onPop?.(r.groups);
       await wait(340);

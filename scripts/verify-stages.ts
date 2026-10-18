@@ -14,7 +14,7 @@ let failed = 0;
 let changed = 0;
 for (const stage of stages) {
   const t = performance.now();
-  const result = solve(parseGrid(stage.grid));
+  const result = solve(parseGrid(stage.grid, stage.floor));
   const ms = Math.round(performance.now() - t);
   const label = `${stage.id}. ${stage.name}`;
   if (result === null || result === 'limit') {

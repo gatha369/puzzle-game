@@ -23,6 +23,8 @@
   --ok-fg: #17704f;
   --shadow: rgba(120, 40, 90, .22);
   --scenery-opacity: .9;
+  --honey: #f0a000;
+  --honey-bg: #fff6dc;
   --font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
   color-scheme: light;
 }
@@ -32,7 +34,7 @@
     --sky1: #1a1640; --sky2: #48256e; --ink: #fff3fb; --muted: #d4c2e8; --panel: #2d2552;
     --line: #6a559c; --cell: #3b3169; --cell-edge: #4d4085; --tray-a: #ff6fae; --tray-b: #4a2a6e;
     --warn-bg: #4a1f3a; --warn-fg: #ffc2dc; --ok-bg: #183b35; --ok-fg: #9ef0cf;
-    --shadow: rgba(0, 0, 0, .5); --scenery-opacity: .7;
+    --shadow: rgba(0, 0, 0, .5); --scenery-opacity: .7; --honey-bg: #3d3058;
     color-scheme: dark;
   }
 }
@@ -40,7 +42,7 @@
   --sky1: #1a1640; --sky2: #48256e; --ink: #fff3fb; --muted: #d4c2e8; --panel: #2d2552;
   --line: #6a559c; --cell: #3b3169; --cell-edge: #4d4085; --tray-a: #ff6fae; --tray-b: #4a2a6e;
   --warn-bg: #4a1f3a; --warn-fg: #ffc2dc; --ok-bg: #183b35; --ok-fg: #9ef0cf;
-  --shadow: rgba(0, 0, 0, .5); --scenery-opacity: .7;
+  --shadow: rgba(0, 0, 0, .5); --scenery-opacity: .7; --honey-bg: #3d3058;
   color-scheme: dark;
 }
 
@@ -104,9 +106,14 @@ body {
 .sound { display: flex; gap: 4px; }
 .btn.toggle { font-size: .72rem; padding: 4px 9px; border-radius: 999px; }
 .btn.toggle[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; opacity: .8; }
-.stages { display: flex; gap: 4px; }
+.stages {
+  /* 32面は1列に収まらないので横スクロール（今のステージを真ん中に寄せる） */
+  position: relative; display: flex; gap: 4px; overflow-x: auto; overscroll-behavior-x: contain;
+  padding: 2px 2px 6px; margin: 0 -2px; scrollbar-width: none; scroll-snap-type: x proximity;
+}
+.stages::-webkit-scrollbar { display: none; }
 .stages button {
-  flex: 1 1 0; max-width: 52px; min-width: 0; font: inherit; font-weight: 700; font-size: .95rem;
+  flex: 0 0 42px; scroll-snap-align: center; font: inherit; font-weight: 700; font-size: .95rem;
   padding: 4px 0 3px; border-radius: 12px; border: 2px solid var(--line); background: var(--panel); color: var(--ink);
   cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.1;
   box-shadow: 0 3px 0 var(--line);
@@ -147,6 +154,8 @@ body {
     linear-gradient(160deg, #f6cf8c, #dca055);
   box-shadow: inset 0 0 0 2px #c4843d, inset 0 -4px 0 rgba(120, 60, 10, .18), inset 0 3px 0 rgba(255, 255, 255, .35);
 }
+.cell.honey { overflow: hidden; background: var(--honey); box-shadow: inset 0 0 0 2px rgba(201, 120, 0, .35); }
+.cell.honey svg, .honey-chip svg { display: block; width: 100%; height: 100%; }
 .layer {
   position: absolute; inset: var(--pad); pointer-events: none;
   --cw: calc((100% - (var(--w) - 1) * 4px) / var(--w));
@@ -168,6 +177,8 @@ body {
 }
 .box.land i { animation: land .16s ease-out; }
 @keyframes land { 0% { transform: scale(1.08, .9); } 100% { transform: scale(1); } }
+.box.stick i { animation: stick .32s ease-out; }
+@keyframes stick { 0% { transform: scale(1.18, .78); } 60% { transform: scale(.96, 1.04); } 100% { transform: scale(1); } }
 .box.pop i { animation: pop .32s ease-in forwards; }
 @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(0); opacity: 0; } }
 
@@ -182,6 +193,20 @@ body {
 .banner.info { background: var(--panel); color: var(--ink); }
 .banner strong { font-weight: 900; font-size: 1.05rem; }
 .banner .btn { flex-shrink: 0; }
+/* 新アイテムの紹介（最初の1手まで） */
+.intro {
+  display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 16px;
+  background: var(--honey-bg); border: 2px dashed var(--honey); box-shadow: 0 4px 12px var(--shadow);
+}
+.intro { transition: opacity .3s ease-out, visibility .3s; }
+.intro.done { opacity: 0; visibility: hidden; }
+/* 紹介を出すステージでは、その分だけ盤を小さくして操作ボタンを画面内に残す */
+.has-intro .board-box { width: min(100%, 460px, max(240px, calc(100svh - 410px))); }
+.intro p { margin: 0; font-size: .8rem; line-height: 1.5; }
+.intro strong { display: block; font-weight: 900; font-size: .95rem; }
+.intro-icons { display: flex; gap: 4px; flex-shrink: 0; }
+.intro-icons > svg, .honey-chip { width: 40px; height: 40px; }
+.honey-chip { display: block; border-radius: 10px; overflow: hidden; box-shadow: inset 0 0 0 2px rgba(201, 120, 0, .35); }
 .tilt-note { margin: 0; font-size: .8rem; color: var(--muted); text-align: center; }
 
 /* ===== 操作 ===== */
@@ -225,6 +250,11 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
   animation: card-in .5s cubic-bezier(.2, 1.4, .4, 1) both;
 }
 .cel-card p { margin: 0; }
+.cel-all { margin: -4px -4px 10px; }
+.cel-all .ribbon { display: block; width: 100%; max-width: 300px; margin: 0 auto; animation: title-in .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+.cel-all-title { font-weight: 900; font-size: 1.2rem; color: var(--pink); margin-top: 2px !important; }
+.cel-all-text { font-size: .85rem; line-height: 1.6; color: var(--ink); }
+.cel-all:not([hidden]) ~ .cel-crown { margin-top: 0; }
 .cel-crown:empty { display: none; }
 .cel-crown { margin: -64px auto -6px; width: 110px; animation: crown-in .7s .15s cubic-bezier(.2, 1.6, .4, 1) both; }
 .cel-crown svg { display: block; width: 100%; }
@@ -255,7 +285,8 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
 @media (prefers-reduced-motion: reduce) {
   .board, .box { transition-duration: .01s !important; }
   .board[class*="tilt-"] { transform: none; }
-  .box.pop i, .box.land i { animation-duration: .01s; }
+  .box.pop i, .box.land i, .box.stick i { animation-duration: .01s; }
+  .stages { scroll-behavior: auto; }
   .scenery * { animation: none !important; }
   .celebrate, .celebrate * { animation: none !important; }
 }

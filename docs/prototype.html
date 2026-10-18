@@ -25,6 +25,8 @@
   --ok-bg: #e9f6ee;
   --ok-fg: #1d6b3c;
   --shadow: rgba(31, 42, 54, .18);
+  --honey: #f2c14e;
+  --honey-bg: #fff6dc;
   --font-display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
   --font-body: "Kosugi Maru", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
 }
@@ -35,6 +37,7 @@
     --red: #ef6658; --green: #46bd76; --blue: #5b8ff0; --yellow: #f0be3a;
     --warn-bg: #3a2220; --warn-fg: #ffb3aa; --ok-bg: #1c3326; --ok-fg: #9be0b5;
     --shadow: rgba(0, 0, 0, .5);
+    --honey: #b8892a; --honey-bg: #3a3020;
     color-scheme: dark;
   }
 }
@@ -44,6 +47,7 @@
   --red: #ef6658; --green: #46bd76; --blue: #5b8ff0; --yellow: #f0be3a;
   --warn-bg: #3a2220; --warn-fg: #ffb3aa; --ok-bg: #1c3326; --ok-fg: #9be0b5;
   --shadow: rgba(0, 0, 0, .5);
+  --honey: #b8892a; --honey-bg: #3a3020;
   color-scheme: dark;
 }
 body {
@@ -102,10 +106,16 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; line-height: 
   color: #fff; font-style: normal; font-size: clamp(.7rem, 3.2vw, 1rem); font-weight: 700;
   box-shadow: inset 0 -3px 0 rgba(0,0,0,.18), 0 2px 3px rgba(0,0,0,.15);
 }
+.cell.honey { background: var(--honey);
+  background-image: radial-gradient(circle at 30% 35%, rgba(255,255,255,.45) 0 12%, transparent 13%),
+                    radial-gradient(circle at 70% 70%, rgba(255,255,255,.25) 0 9%, transparent 10%); }
+.box.rainbow i { background: conic-gradient(from 0deg, var(--red), var(--yellow), var(--green), var(--blue), #a05ad8, var(--red)); }
 .box.R i { background: var(--red); } .box.G i { background: var(--green); }
 .box.B i { background: var(--blue); } .box.Y i { background: var(--yellow); }
 .box.land i { animation: land .16s ease-out; }
 @keyframes land { 0% { transform: scale(1.08, .9); } 100% { transform: scale(1); } }
+.box.stick i { animation: stick .32s ease-out; }
+@keyframes stick { 0% { transform: scale(1.18, .78); } 60% { transform: scale(.96, 1.04); } 100% { transform: scale(1); } }
 .box.pop i { animation: pop .32s ease-in forwards; }
 @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(0); opacity: 0; } }
 
@@ -115,6 +125,8 @@ header p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; line-height: 
 }
 .banner.stuck { background: var(--warn-bg); color: var(--warn-fg); }
 .banner.clear { background: var(--ok-bg); color: var(--ok-fg); }
+.banner.intro { background: var(--honey-bg); color: var(--fg); border: 1px dashed var(--honey); }
+.banner.allclear { background: var(--ok-bg); color: var(--ok-fg); border: 2px solid var(--gold); }
 .banner strong { font-family: var(--font-display); font-size: 1.05rem; }
 
 .controls { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 48px); gap: 6px; justify-content: center; }
@@ -139,14 +151,14 @@ button:active { transform: translateY(1px); }
 @media (prefers-reduced-motion: reduce) {
   .board, .box { transition-duration: .01s !important; }
   .board[class*="tilt-"] { transform: none; }
-  .box.pop i, .box.land i { animation-duration: .01s; }
+  .box.pop i, .box.land i, .box.stick i { animation-duration: .01s; }
 }
 </style>
 
 <div class="wrap">
   <header>
     <h1>色寄せパズル</h1>
-    <p>ルール確認用の試作です。盤を傾けてボックスを全部いっせいに滑らせ、同じ色を3個以上くっつけて消します。</p>
+    <p>ルール確認用の試作です（全32ステージ）。盤を傾けてボックスを全部いっせいに滑らせ、同じ色を3個以上くっつけて消します。</p>
   </header>
 
   <nav class="stages" id="stages" aria-label="ステージ選択"></nav>
@@ -166,6 +178,9 @@ button:active { transform: translateY(1px); }
     </div>
   </div>
 
+  <div class="banner intro" id="intro" hidden>
+    <span><strong id="introTitle"></strong><br><span id="introText"></span></span>
+  </div>
   <div class="banner stuck" id="stuck" hidden>
     <span><strong>もう解けません</strong><br>どこかで手順を誤りました。最初からやり直しましょう。</span>
     <button class="btn" id="stuckReset" type="button">やり直す</button>
@@ -173,6 +188,11 @@ button:active { transform: translateY(1px); }
   <div class="banner clear" id="clear" hidden>
     <span><strong id="clearTitle"></strong><br><span id="clearText"></span></span>
     <button class="btn primary" id="nextBtn" type="button">次のステージへ</button>
+  </div>
+
+  <div class="banner allclear" id="allclear" hidden>
+    <span><strong id="allTitle"></strong><br><span id="allText"></span></span>
+    <button class="btn primary" id="againBtn" type="button">このステージをもう一度</button>
   </div>
 
   <div class="controls" aria-label="方向">
@@ -191,6 +211,7 @@ button:active { transform: translateY(1px); }
     <ul>
       <li>盤を傾けると、すべてのボックスが壁や他のボックスに当たるまで滑ります。灰色の壁は動きません</li>
       <li>同じ色が上下左右に3個以上つながると、その塊がまとめて消えます（4個以上も全部消えます）</li>
+      <li>★のレインボーキャンディ（9面〜）はどの色とも揃います。黄色いはちみつ床（13面〜）に滑り込んだボックスはそこで止まります</li>
       <li>全部消せばクリア。お手本手数ちょうどで金、+2手まで銀、それ以上は銅</li>
       <li>色の残りが1〜2個になるなど、解けなくなったら「もう解けません」と出ます。1手戻しはありません</li>
     </ul>
@@ -198,8 +219,17 @@ button:active { transform: translateY(1px); }
 </div>
 
 <script>
-// ===== ロジック =====
-function parse(rows) { return { w: rows[0].length, h: rows.length, c: rows.join('') }; }
+// ===== ロジック（Node で検証したものと同じ） =====
+// 盤面: { w, h, c, f }
+//   c: ボックス層（'.' 空き, '#' 壁, 'R''G''B''Y' 色, '*' レインボーキャンディ）
+//   f: 床層（'.' 普通, 'h' はちみつ床）。床は動かないので状態キーには含めない
+function parse(rows, floorRows) {
+  const w = rows[0].length, h = rows.length;
+  const f = floorRows ? floorRows.join('') : '.'.repeat(w * h);
+  return { w, h, c: rows.join(''), f };
+}
+const isBox = ch => ch !== '.' && ch !== '#';
+
 function lineIdx(b, dir, k) {
   const out = [];
   if (dir === 'left')  for (let x = 0; x < b.w; x++) out.push(k * b.w + x);
@@ -208,7 +238,8 @@ function lineIdx(b, dir, k) {
   if (dir === 'down')  for (let y = b.h - 1; y >= 0; y--) out.push(y * b.w + k);
   return out;
 }
-// 滑らせた盤面と、各ボックスの移動元→移動先の対応を返す
+
+// 滑らせる。はちみつ床に「入った」ボックスはそこで止まる（最初から乗っているボックスは離れられる）
 function slide(b, dir) {
   const a = b.c.split(''), map = new Map();
   const lines = (dir === 'left' || dir === 'right') ? b.h : b.w;
@@ -219,33 +250,51 @@ function slide(b, dir) {
       const ch = a[idx[i]];
       if (ch === '#') { target = i + 1; continue; }
       if (ch === '.') continue;
-      map.set(idx[i], { to: idx[target], dist: i - target });
-      if (i !== target) { a[idx[target]] = ch; a[idx[i]] = '.'; }
-      target++;
+      // 進路（i-1 から target まで）で最初に出会うはちみつ床
+      let stop = target;
+      for (let j = i - 1; j >= target; j--) if (b.f[idx[j]] === 'h') { stop = j; break; }
+      map.set(idx[i], { to: idx[stop], dist: i - stop });
+      if (i !== stop) { a[idx[stop]] = ch; a[idx[i]] = '.'; }
+      target = stop + 1;
     }
   }
-  return { w: b.w, h: b.h, c: a.join(''), map };
+  return { w: b.w, h: b.h, c: a.join(''), f: b.f, map };
 }
+
+function neighbors(b, p) {
+  const x = p % b.w, y = (p / b.w) | 0, nb = [];
+  if (x > 0) nb.push(p - 1); if (x < b.w - 1) nb.push(p + 1);
+  if (y > 0) nb.push(p - b.w); if (y < b.h - 1) nb.push(p + b.w);
+  return nb;
+}
+
+// 消える塊：各色ごとに「その色＋レインボー」でつながった3個以上の塊。
+// レインボーだけの塊も3個以上なら消える。レインボーは隣り合う複数の色の塊に同時に参加できる
 function findGroups(b) {
-  const seen = new Uint8Array(b.c.length), groups = [];
-  for (let i = 0; i < b.c.length; i++) {
-    const ch = b.c[i];
-    if (seen[i] || ch === '.' || ch === '#') continue;
-    const stack = [i], g = []; seen[i] = 1;
-    while (stack.length) {
-      const p = stack.pop(); g.push(p);
-      const x = p % b.w, y = (p / b.w) | 0, nb = [];
-      if (x > 0) nb.push(p - 1); if (x < b.w - 1) nb.push(p + 1);
-      if (y > 0) nb.push(p - b.w); if (y < b.h - 1) nb.push(p + b.w);
-      for (const q of nb) if (!seen[q] && b.c[q] === ch) { seen[q] = 1; stack.push(q); }
+  const colors = new Set();
+  for (const ch of b.c) if (isBox(ch) && ch !== '*') colors.add(ch);
+  const groups = [];
+  const scan = (match, needColor) => {
+    const seen = new Uint8Array(b.c.length);
+    for (let i = 0; i < b.c.length; i++) {
+      if (seen[i] || !match(b.c[i])) continue;
+      const stack = [i], g = []; seen[i] = 1; let hasColor = false;
+      while (stack.length) {
+        const p = stack.pop(); g.push(p);
+        if (b.c[p] !== '*') hasColor = true;
+        for (const q of neighbors(b, p)) if (!seen[q] && match(b.c[q])) { seen[q] = 1; stack.push(q); }
+      }
+      if (g.length >= 3 && (!needColor || hasColor)) groups.push(g);
     }
-    if (g.length >= 3) groups.push(g);
-  }
+  };
+  for (const col of colors) scan(ch => ch === col || ch === '*', true);
+  scan(ch => ch === '*', false);
   return groups;
 }
+
 function clearGroups(b, groups) {
   const a = b.c.split(''); for (const g of groups) for (const p of g) a[p] = '.';
-  return { w: b.w, h: b.h, c: a.join('') };
+  return { w: b.w, h: b.h, c: a.join(''), f: b.f };
 }
 function step(b, dir) {
   const s = slide(b, dir);
@@ -253,11 +302,18 @@ function step(b, dir) {
   const groups = findGroups(s);
   return { slid: s, groups, next: clearGroups(s, groups) };
 }
-function colorCounts(b) { const m = {}; for (const ch of b.c) if (/[A-Z]/.test(ch)) m[ch] = (m[ch] || 0) + 1; return m; }
-function isCleared(b) { return !/[A-Z]/.test(b.c); }
-function surelyStuck(b) { return Object.values(colorCounts(b)).some(n => n < 3); }
+function colorCounts(b) { const m = {}; for (const ch of b.c) if (isBox(ch)) m[ch] = (m[ch] || 0) + 1; return m; }
+function isCleared(b) { for (const ch of b.c) if (isBox(ch)) return false; return true; }
+// 確実に詰み：ある色の数＋レインボー数が3未満、またはレインボーだけが1〜2個残った
+function surelyStuck(b) {
+  const m = colorCounts(b), r = m['*'] || 0;
+  let colorsLeft = 0;
+  for (const k in m) if (k !== '*') { colorsLeft++; if (m[k] + r < 3) return true; }
+  if (!colorsLeft && r > 0 && r < 3) return true;
+  return false;
+}
 const DIRS = ['up', 'down', 'left', 'right'];
-function solve(b, limit = 120000) {
+function solve(b, limit = 200000) {
   if (isCleared(b)) return [];
   if (surelyStuck(b)) return null;
   const prev = new Map([[b.c, null]]);
@@ -283,17 +339,8 @@ function solve(b, limit = 120000) {
 }
 
 // ===== ステージ（お手本手数はソルバーで検証済み） =====
-const STAGES = [
-  { name: 'はじめの一歩', grid: ["R...R", ".....", ".....", ".....", "R...."] },
-  { name: '二色', grid: ["R..GR", "....G", ".....", "..G.R", "....."] },
-  { name: '壁のある盤', grid: ["R..#.", ".....", "#.R..", "..#.R", "....."] },
-  { name: '三色', grid: ["....G", "B....", ".R..#", ".BBR.", "..RGG"] },
-  { name: '消しすぎ注意', grid: ["BR..R", "..B..", "R..#.", "..B#R", "RR..."] },
-  { name: '赤が六つ', grid: ["R...R", "..BRB", "....R", "..#R#", ".B.R."] },
-  { name: '広い盤', grid: ["..R..R", "..B.BB", "BG.B..", "R.....", "B.G...", ".##.G#"] },
-  { name: '七手の道', grid: ["..B...", "#..B..", ".....B", ".....B", "BG#G..", "#GRRBR"] },
-];
-STAGES.forEach(s => { const sol = solve(parse(s.grid)); s.par = Array.isArray(sol) ? sol.length : 0; s.silver = 2; });
+const STAGES = [{"id":"1","name":"はじめの一歩","grid":["R...R",".....",".....",".....","R...."]},{"id":"2","name":"二色","grid":["R..GR","....G",".....","..G.R","....."]},{"id":"3","name":"壁のある盤","grid":["R..#.",".....","#.R..","..#.R","....."]},{"id":"4","name":"三色","grid":["....G","B....",".R..#",".BBR.","..RGG"]},{"id":"5","name":"消しすぎ注意","grid":["BR..R","..B..","R..#.","..B#R","RR..."]},{"id":"6","name":"赤が六つ","grid":["R...R","..BRB","....R","..#R#",".B.R."]},{"id":"7","name":"広い盤","grid":["..R..R","..B.BB","BG.B..","R.....","B.G...",".##.G#"]},{"id":"8","name":"七手の道","grid":["..B...","#..B..",".....B",".....B","BG#G..","#GRRBR"]},{"id":"9","name":"虹のキャンディ","grid":[".....","*....",".R...",".....","....R"],"intro":"rainbow"},{"id":"10","name":"虹で埋める","grid":["GR...","...R.","..G..","*....","..G.."]},{"id":"11","name":"五つと虹","grid":["*#R.R","....R","...R.",".....","....R"]},{"id":"12","name":"虹がふたつ","grid":["...RG",".R...",".....","*G...","..*#."]},{"id":"13","name":"はちみつ床","grid":[".....",".....","R....",".....","..RR."],"floor":[".....","..h..",".....",".....","....."],"intro":"honey"},{"id":"14","name":"ぴたっと止まる","grid":[".....",".....",".RGGR","G....","...R."],"floor":["h....",".....",".....",".....","...h."]},{"id":"15","name":"甘い足どめ","grid":["RRB.G","..G..","...B.","...BG","...R."],"floor":[".hh..",".....",".....",".....","...h."]},{"id":"16","name":"はちみつと六つの赤","grid":["....R","B....","..R#.",".R.BB","R.RR."],"floor":[".h...",".....",".....",".....",".h..."]},{"id":"17","name":"三色のはちみつ","grid":["....B","#.G.#","R..G.","..BGB","RR..."],"floor":[".....",".h...",".....","...h.","....h"]},{"id":"18","name":"広い盤のはちみつ","grid":["#...RG","...B..","......",".....R","....BG","#..GBR"],"floor":["......",".....h","......","......","......",".h...."]},{"id":"19","name":"赤六つ再び","grid":[".G.#..","...RR.","R.R..G",".GR...","......",".R.#.."],"floor":["......","......","...h.h",".....h","......","......"]},{"id":"20","name":"青が六つ","grid":[".RG...","..GB..",".....#","..#..B","GBB..#","R.RBB."],"floor":["...h..","....h.","......",".....h","......","......"]},{"id":"21","name":"虹とはちみつ","grid":["R..G.",".....","GR...","...G.","..*.."],"floor":["..h..",".....",".....",".....","...h."],"intro":"both"},{"id":"22","name":"ふたつの虹","grid":[".#.G.","R.GR.",".....","..*..","...*."],"floor":[".....",".....",".....","h....","..h.."]},{"id":"23","name":"五つの赤","grid":["......",".R....","G..G..","...RR.",".#R..#",".*.RG."],"floor":["......","..h...",".h....","......","......","......"]},{"id":"24","name":"三色と虹","grid":["..#G..","...R..","..*..B","G.B...",".B....","G.R.#."],"floor":["......","..h...","......",".h....","......","h....."]},{"id":"25","name":"四色","grid":["..#.B","G..YR",".GBB.","R...G","..YYR"],"floor":["...h.",".....",".....",".....",".h..."]},{"id":"26","name":"虹の使いどころ","grid":["..#...","R....R","R..B*G","B.....","..*B..","#..RRG"],"floor":["......","......","......","...h.h","......","...h.."]},{"id":"27","name":"六と六","grid":["..R...","G.G..#","...GG.",".R.#..",".RGRR.","R#...G"],"floor":["..h...","......","......","h.....","h.....","......"]},{"id":"28","name":"虹が三つ","grid":["R..*..","...*.G","......","G..##.","....RB","...*.B"],"floor":["......","....h.","..h...","......","....h.","......"]},{"id":"29","name":"四色と虹","grid":[".....#","*#R.YG",".B...G","..R...","B.YG..","B#...R"],"floor":["......","......","......","......","....hh","....h."]},{"id":"30","name":"虹三つの迷路","grid":[".*.R.#","...GB*",".GBR..",".G.GG.","...R..",".#R#B*"],"floor":["......","......","...h..",".hh...","......","......"]},{"id":"31","name":"九手の迷宮","grid":["....RB",".....B",".#R.G.","#...R.","G#GR.R","B..R#."],"floor":["....hh",".....h","......","......","......","...h.."]},{"id":"32","name":"最後の観覧車","grid":["...Y...",".Y.....",".#.....","RB...#.","G.Y..R#","R.R...B","R#BG*.*"],"floor":[".......",".......","..h....",".......",".......","h..h.h.","......."]}];
+STAGES.forEach(s => { const sol = solve(parse(s.grid, s.floor)); s.par = Array.isArray(sol) ? sol.length : 0; s.silver = 2; });
 
 const MEDALS = { gold: '金', silver: '銀', bronze: '銅' };
 const RANK = { bronze: 1, silver: 2, gold: 3 };
@@ -304,7 +351,7 @@ let medals = loadMedals();
 // ===== 状態と描画 =====
 const $ = id => document.getElementById(id);
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const GLYPH = { R: '●', G: '▲', B: '■', Y: '◆' };
+const GLYPH = { R: '●', G: '▲', B: '■', Y: '◆', '*': '★' };
 let stageIdx = 0, board, moves = 0, state = 'play', busy = false;
 let boxes = new Map(); // 盤面上の位置 → ボックス要素
 const wait = ms => new Promise(r => setTimeout(r, reduceMotion ? 0 : ms));
@@ -336,11 +383,11 @@ function buildBoard() {
   cells.innerHTML = ''; layer.innerHTML = ''; boxes = new Map();
   for (let i = 0; i < board.c.length; i++) {
     const ch = board.c[i], cell = document.createElement('div');
-    cell.className = 'cell' + (ch === '#' ? ' wall' : '');
+    cell.className = 'cell' + (ch === '#' ? ' wall' : '') + (board.f[i] === 'h' ? ' honey' : '');
     cells.appendChild(cell);
-    if (/[A-Z]/.test(ch)) {
+    if (isBox(ch)) {
       const box = document.createElement('div');
-      box.className = 'box ' + ch;
+      box.className = 'box ' + (ch === '*' ? 'rainbow' : ch);
       box.innerHTML = `<i>${GLYPH[ch] || ''}</i>`;
       box.style.transitionDuration = '0ms';
       placeBox(box, i);
@@ -357,10 +404,19 @@ function updateStatus() {
   $('par').textContent = s.par;
   $('stuck').hidden = state !== 'stuck';
   $('clear').hidden = state !== 'clear';
+  $('allclear').hidden = state !== 'allclear';
+  const intro = s.intro ? INTROS[s.intro] : null;
+  $('intro').hidden = !intro || state !== 'play' || moves > 0;
+  if (intro) { $('introTitle').textContent = intro.title; $('introText').textContent = intro.text; }
 }
+const INTROS = {
+  rainbow: { title: '新アイテム：レインボーキャンディ', text: '★のキャンディはどの色とも揃います。隣り合う色の仲間として数えられ、一緒に消えます。足りない1個を補う切り札です。' },
+  honey: { title: '新しい床：はちみつ床', text: '黄色いはちみつ床に滑り込んだボックスは、そこでぴたっと止まります。乗っているボックスは次に傾けると離れられます。' },
+  both: { title: 'ここからは両方', text: 'レインボーキャンディとはちみつ床がいっしょに出てきます。どこで止めて、どこで虹を使うかが勝負です。' },
+};
 
 function loadStage(i) {
-  stageIdx = i; board = parse(STAGES[i].grid); moves = 0; state = 'play'; busy = false;
+  stageIdx = i; board = parse(STAGES[i].grid, STAGES[i].floor); moves = 0; state = 'play'; busy = false;
   $('board').className = 'board';
   buildBoard(); renderStages(); updateStatus();
 }
@@ -394,7 +450,10 @@ async function doMove(dir) {
     longest = Math.max(longest, dur);
     el.style.transitionDuration = dur + 'ms';
     placeBox(el, m.to);
-    if (m.dist) setTimeout(() => { el.classList.remove('land'); void el.offsetWidth; el.classList.add('land'); }, reduceMotion ? 0 : dur);
+    if (m.dist) {
+      const cls = board.f[m.to] === 'h' ? 'stick' : 'land';
+      setTimeout(() => { el.classList.remove('land', 'stick'); void el.offsetWidth; el.classList.add(cls); }, reduceMotion ? 0 : dur);
+    }
     moved.set(m.to, el);
   }
   boxes = moved;
@@ -430,12 +489,25 @@ function finishClear() {
     : `${moves}手（お手本は${s.par}手）。もっと短い手順があります。`;
   $('nextBtn').hidden = stageIdx >= STAGES.length - 1;
   renderStages();
+  if (stageIdx === STAGES.length - 1) showAllClear();
+}
+
+function showAllClear() {
+  const tally = { gold: 0, silver: 0, bronze: 0 };
+  let cleared = 0;
+  STAGES.forEach((_, i) => { if (medals[i]) { tally[medals[i]]++; cleared++; } });
+  state = 'allclear';
+  $('allTitle').textContent = tally.gold === STAGES.length ? '全ステージ 金賞！ パーフェクト！' : '全ステージクリア！';
+  $('allText').textContent = cleared === STAGES.length
+    ? `32ステージ制覇おめでとう。金${tally.gold}・銀${tally.silver}・銅${tally.bronze}。` + (tally.gold < STAGES.length ? '金賞が取れていないステージに挑戦してみましょう。' : 'すべてお手本どおりです。')
+    : `最終ステージをクリア！ まだクリアしていないステージが${STAGES.length - cleared}面あります。`;
 }
 
 // ===== 入力 =====
 document.querySelectorAll('.controls button').forEach(b => b.addEventListener('click', () => doMove(b.dataset.dir)));
 $('resetBtn').addEventListener('click', () => { if (!busy) loadStage(stageIdx); });
 $('stuckReset').addEventListener('click', () => loadStage(stageIdx));
+$('againBtn').addEventListener('click', () => loadStage(stageIdx));
 $('nextBtn').addEventListener('click', () => loadStage(Math.min(stageIdx + 1, STAGES.length - 1)));
 document.addEventListener('keydown', e => {
   const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
