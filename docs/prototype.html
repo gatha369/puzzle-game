@@ -177,6 +177,9 @@ button:active { transform: translateY(1px); }
 }
 @keyframes hintpulse { 0% { opacity: 0; transform: scale(.7); } 15% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
 .controls button.hinted { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent); }
+.credit { text-align: center; font-size: .7rem; color: var(--muted); opacity: .8; padding-top: 4px; }
+.credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; text-decoration-color: var(--line); }
+.credit a:hover, .credit a:focus-visible { color: var(--fg); }
 .ad-modal {
   position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
   background: var(--scrim);
@@ -219,7 +222,7 @@ button:active { transform: translateY(1px); }
 
 <div class="wrap">
   <header>
-    <h1>RYMスライド <span class="ruby">アールワイエムスライド</span></h1>
+    <h1>RYMスライド <span class="ruby">リムスライド</span></h1>
     <p>ルール確認用の試作です（全32ステージ）。盤を傾けてボックスを全部いっせいに滑らせ、同じ色を3個以上くっつけて消します。</p>
   </header>
 
@@ -286,6 +289,8 @@ button:active { transform: translateY(1px); }
       <li>色の残りが1〜2個になるなど、解けなくなったら「もう解けません」と出ます。1手戻しはありません</li>
     </ul>
   </section>
+
+  <footer class="credit">© 2026 <a href="https://rym.co.jp/" target="_blank" rel="noopener">RYM</a>（合同会社 長岡念珠店）</footer>
 </div>
 
 <div class="ad-modal" id="adModal" hidden>

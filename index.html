@@ -5,9 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#ffd9ec" />
-    <title>色寄せパズル</title>
+    <title>RYMスライド</title>
+    <!-- ホーム画面に追加したときの名前 -->
+    <meta name="application-name" content="RYMスライド" />
+    <meta name="apple-mobile-web-app-title" content="RYMスライド" />
     <meta name="description" content="盤を傾けてお菓子をいっせいに滑らせ、同じ色を3個そろえて消すパズル。お手本手数で金メダルを目指そう。" />
-    <meta property="og:title" content="色寄せパズル" />
+    <meta property="og:title" content="RYMスライド" />
+    <meta property="og:site_name" content="RYMスライド" />
     <meta property="og:description" content="盤を傾けてお菓子をいっせいに滑らせ、同じ色を3個そろえて消すパズル。" />
     <meta property="og:type" content="website" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -66,7 +70,7 @@
     <div class="wrap">
       <header class="top">
         <div class="logo-row">
-          <h1 class="logo">色寄せパズル</h1>
+          <h1 class="logo">RYMスライド<span class="logo-ruby">リムスライド</span></h1>
           <div class="sound" aria-label="サウンド">
             <button class="btn toggle" id="bgmBtn" type="button" aria-pressed="true">♪ BGM</button>
             <button class="btn toggle" id="sfxBtn" type="button" aria-pressed="true">効果音</button>
@@ -154,6 +158,8 @@
           <li>同じお菓子の残りが1〜2個になるなど、解けなくなったら「もう解けません」と出ます。1手戻しはありません</li>
         </ul>
       </section>
+
+      <footer class="credit">© 2026 <a href="https://rym.co.jp/" target="_blank" rel="noopener">RYM</a>（合同会社 長岡念珠店）</footer>
     </div>
     <!-- クリア画面 -->
     <div class="celebrate" id="clear" role="dialog" aria-modal="true" aria-labelledby="celTitle" hidden>
